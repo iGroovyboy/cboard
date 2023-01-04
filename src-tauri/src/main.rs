@@ -5,7 +5,7 @@
 
 use inputbot::{KeybdKey::*};
 use arboard::Clipboard;
-use std::{thread, thread::sleep, time::Duration, fs, path::Path};
+use std::{thread, thread::sleep, time::{Duration, SystemTime, UNIX_EPOCH}, fs, path::Path};
 use tauri::Manager;
 // use tauri::AppHandle;
 
@@ -14,6 +14,14 @@ use tauri::Manager;
 #[derive(Clone, serde::Serialize)]
 struct Payload {
   message: String,
+}
+
+fn get_timestamp() -> String {
+  SystemTime::now()
+      .duration_since(UNIX_EPOCH)
+      .unwrap()
+      .as_millis()
+      .to_string()
 }
 
 fn save_clipboard(contents: String, is_text: bool, app: tauri::AppHandle) {
@@ -27,7 +35,7 @@ fn save_clipboard(contents: String, is_text: bool, app: tauri::AppHandle) {
     .join("data")
     .join("clipboard");
   
-  let f =  p.join("somefile.txt");
+  let f =  p.join([get_timestamp(), ".txt".to_string()].concat());
 
   println!("save_clipboard: {}", p.display());
 
