@@ -14,6 +14,12 @@
   "tauri": {
     "allowlist": {
       "all": false,
+      "fs": {
+        "readDir": true,
+        "readFile": true,
+        "exists": true,
+        "scope": ["**"]
+      },
       "globalShortcut": {
         "all": true
       }
@@ -60,10 +66,10 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 600,
+        "height": 410,
         "resizable": false,
         "title": "cboard",
-        "width": 800
+        "width": 400
       }
     ]
   }
