@@ -5,7 +5,7 @@
 
 use inputbot::{KeybdKey::*};
 use arboard::Clipboard;
-use std::{thread, thread::sleep, time::{Duration, SystemTime, UNIX_EPOCH}, fs, path::Path};
+use std::{thread, thread::sleep, time::{Duration, SystemTime, UNIX_EPOCH}, fs, path::{Path, PathBuf}};
 use tauri::Manager;
 // use tauri::AppHandle;
 
@@ -24,7 +24,25 @@ fn get_timestamp() -> String {
       .to_string()
 }
 
-fn save_clipboard(contents: String, is_text: bool, app: tauri::AppHandle) {
+// fn data_path(filename: String, folder: String) -> PathBuf {
+//   app_handle();
+
+//   let app_dir = app
+//     .path_resolver()
+//     .app_local_data_dir()
+//     .expect("Failed to resolve app local dir");
+
+
+//   let p = app_dir.as_path()
+//     .join("data")
+//     .join(folder);
+
+//   return p;
+// }
+
+// TODO: check if previous record has same contents as current and skip if they are equal
+// TODO: detect/save image
+fn save_clipboard(contents: String, is_text: bool, app: &tauri::AppHandle) {
   let app_dir = app
     .path_resolver()
     .app_local_data_dir()
@@ -45,16 +63,40 @@ fn save_clipboard(contents: String, is_text: bool, app: tauri::AppHandle) {
 }
 
 #[tauri::command]
+fn remove_clipboard_item(filename: String, folder: String, app: tauri::AppHandle) {
+  let file = app
+    .path_resolver()
+    .app_local_data_dir()
+    .expect("Failed to resolve app local dir")
+    .as_path()
+    .join("data")
+    .join(folder)
+    .join(filename);
+
+  fs::remove_file(&file);
+  println!("removed file {:?}", file);
+  app.emit_all("clipboard", Payload { message: "remove_clipboard_item".to_string() }).unwrap();
+}
+
+#[tauri::command]
+fn move_clipboard_item(from: String, filename: String, folder: String, app: tauri::AppHandle) {
+  let to = app
+    .path_resolver()
+    .app_local_data_dir()
+    .expect("Failed to resolve app local dir")
+    .as_path()
+    .join("data")
+    .join(folder)
+    .join(&filename);
+
+  fs::rename(from, &to);
+  println!("moved file {} to {:?}", &filename, to);
+  app.emit_all("clipboard", Payload { message: "move_clipboard_item".to_string() }).unwrap();
+}
+
+#[tauri::command]
 fn enable_clipboard(app: tauri::AppHandle) -> Result<String, String> {
   println!("Clipboard management was enabled!");
-
-  // let app_dir = app
-  //     .path_resolver()
-  //     .app_local_data_dir()
-  //     .expect("failed to resolve app dir");
-
-  // println!("app_dir {:#?}", app_dir.as_path());
-  // save_clipboard("123".to_string(), true, app.clone());
 
   let app_clone = app.clone();
 
@@ -80,7 +122,7 @@ fn enable_clipboard(app: tauri::AppHandle) -> Result<String, String> {
 
         let mut stroo = "".to_string();
         for x in 0..im.bytes.len() {
-          let mut v = im.bytes[x];
+          let v = im.bytes[x];
           stroo.push(v as char);
       }
 
@@ -89,8 +131,8 @@ fn enable_clipboard(app: tauri::AppHandle) -> Result<String, String> {
         return (); 
       }
       // println!("Clipboard image: {}", img.width.to_string());
-      // println!("Clipboard text: {}", clipboard.get_text().unwrap());
-      // app.emit_all("clipboard_img", Payload { message: clipboard.get_text().unwrap() }).unwrap();
+      
+      save_clipboard(clipboard.get_text().unwrap().to_string(), true, &app);
     }
   });
 
@@ -102,9 +144,7 @@ fn enable_clipboard(app: tauri::AppHandle) -> Result<String, String> {
       // here we have just recently clipboard data
       let mut clipboard = Clipboard::new().unwrap();
       println!("Clipboard text: {}", clipboard.get_text().unwrap());
-      save_clipboard(clipboard.get_text().unwrap().to_string(), true, app_clone.clone());
-
-      // app_clone.emit_all("clipboard", Payload { message: clipboard.get_text().unwrap().into() }).unwrap();
+      save_clipboard(clipboard.get_text().unwrap().to_string(), true, &app_clone);
     }
   });
 
@@ -116,7 +156,11 @@ fn enable_clipboard(app: tauri::AppHandle) -> Result<String, String> {
 
 fn main() {
   tauri::Builder::default()
-    .invoke_handler(tauri::generate_handler![enable_clipboard])
+    .invoke_handler(tauri::generate_handler![
+      enable_clipboard, 
+      remove_clipboard_item, 
+      move_clipboard_item
+    ])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }
