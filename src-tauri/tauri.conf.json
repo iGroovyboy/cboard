@@ -66,11 +66,15 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 410,
-        "resizable": false,
+        "height": 510,
+        "resizable": true,
         "title": "cboard",
         "width": 400
       }
-    ]
+    ],
+    "systemTray": {
+      "iconPath": "icons/icon.png",
+      "iconAsTemplate": true
+    }
   }
 }

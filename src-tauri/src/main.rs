@@ -6,7 +6,7 @@
 use inputbot::{KeybdKey::*};
 use arboard::Clipboard;
 use std::{thread, thread::sleep, time::{Duration, SystemTime, UNIX_EPOCH}, fs, path::{Path, PathBuf}};
-use tauri::Manager;
+use tauri::{Manager, AppHandle, CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayEvent};
 // use tauri::AppHandle;
 
 
@@ -104,7 +104,7 @@ fn enable_clipboard(app: tauri::AppHandle) -> Result<String, String> {
     let mut i = 1;
 
     loop {
-      if i > 5 {
+      if i > 1 {
         break;
       }
       i += 1;
@@ -154,6 +154,70 @@ fn enable_clipboard(app: tauri::AppHandle) -> Result<String, String> {
   return Ok(123.to_string());
 }
 
+#[tauri::command]
+fn hide_window(app: AppHandle) {
+  let window = app.get_window("main").unwrap();
+  let menu_item = app.tray_handle().get_item("toggle");
+  window.hide();
+  menu_item.set_title("Show");
+}
+
+fn make_tray() -> SystemTray {     // <- a function that creates the system tray
+  let menu = SystemTrayMenu::new()
+    .add_item(CustomMenuItem::new("toggle".to_string(), "Hide"))
+    .add_item(CustomMenuItem::new("quit".to_string(), "Quit"));
+  
+    return SystemTray::new().with_menu(menu);
+}
+
+fn handle_tray_events(app: &AppHandle, event: SystemTrayEvent) {
+  match event {
+    SystemTrayEvent::LeftClick {
+      position: _,
+      size: _,
+      ..
+    } => {
+      let window = app.get_window("main").unwrap();
+      let hide_item_handle = app.tray_handle().get_item("toggle");
+      
+      if !window.is_visible().unwrap() {
+        window.show().unwrap();
+        hide_item_handle.set_title("Hide");
+      }
+    }
+    SystemTrayEvent::RightClick {
+      position: _,
+      size: _,
+      ..
+    } => {
+      println!("system tray received a right click");
+    }
+    SystemTrayEvent::MenuItemClick { id, .. } => {
+      
+      match id.as_str() {
+        "quit" => {
+          println!("bb");
+          std::process::exit(0);
+        }
+        "toggle" => {
+          let window = app.get_window("main").unwrap();
+          let hide_item_handle = app.tray_handle().get_item("toggle");
+          
+          if window.is_visible().unwrap() {
+            window.hide().unwrap();
+            hide_item_handle.set_title("Show");
+          } else {
+            window.show().unwrap();
+            hide_item_handle.set_title("Hide");
+          }
+        }
+        _ => {}
+      }
+    }
+    _ => {}
+  }
+}
+
 fn main() {
   tauri::Builder::default()
     .invoke_handler(tauri::generate_handler![
@@ -161,6 +225,15 @@ fn main() {
       remove_clipboard_item, 
       move_clipboard_item
     ])
+    .system_tray(make_tray())
+    .on_system_tray_event(handle_tray_events)
+    .on_window_event(|event| match event.event() {
+      tauri::WindowEvent::CloseRequested { api, .. } => {
+          event.window().hide().unwrap();
+          api.prevent_close();
+      }
+      _ => {}
+    })
     .run(tauri::generate_context!())
     .expect("error while running tauri application");
 }

@@ -2,17 +2,17 @@
   <nav>
     <ul class="tabs flex flex-row cursor-pointer">
       <li @click="switchTab(Folder.Clipboard)" 
-        class="p-3 px-5 text-xs border-b flex shrink-0" 
+        class="p-3 px-5 text-xs sm:text-base border-b flex shrink-0" 
         :class="{active: activeTabId === Folder.Clipboard, 'border-gray-500': activeTabId !== Folder.Clipboard}">
         Clipboard
       </li>
       <li @click="switchTab(Folder.Favorites)" 
-        class="p-3 px-5 text-xs border-b flex shrink-0"
+        class="p-3 px-5 text-xs sm:text-base border-b flex shrink-0"
         :class="{active: activeTabId === Folder.Favorites, 'border-gray-500': activeTabId !== Folder.Favorites}">
         <img src="./assets/star.svg" alt="" class="w-4 mt-[-3px] mr-1">
         Favorites
       </li>
-      <li class="p-3 px-5 text-xs border-b border-gray-500 flex shrink-0">
+      <li class="p-3 px-5 text-xs sm:text-base border-b border-gray-500 flex shrink-0">
         <img src="./assets/add.svg" alt="" class="mt-[-3px]">
         Add
       </li>
@@ -20,16 +20,16 @@
     </ul>
 
     <div class="search flex flex-row p-2">
-      <input type="text" placeholder="Search" class="p-1 text-xs w-11/12 border-sky-500">
-      <img src="./assets/search.svg" alt="" class="w-1/12 h-25 pl-2 opacity-30 hover:opacity-100">
+      <input type="text" placeholder="Search" class="p-1 text-xs sm:text-base w-11/12 border-sky-500">
+      <img src="./assets/search.svg" alt="" class="w-8 max-h-10 sm:w-1/12 pl-2 opacity-30 hover:opacity-100 cursor-pointer">
     </div>
   </nav>
 
-  <main class="mx-2 overflow-y-scroll h-80 pr-1">
+  <main class="ml-2 mr-1 overflow-y-scroll pr-1">
     <ul v-if="data[activeTabId] && data[activeTabId].children">
       <li v-for="(item, key) in data[activeTabId].children" :key="key" class="flex pb-2 mb-2 border-b border-neutral-700">
         <div class="item w-11/12 cursor-pointer" @click="pasteItem(item)">
-          <div class="value text-xs pb-2 mb-2 leading-5 overflow-hidden max-h-14">{{ item.contents }}</div>
+          <div class="value text-xs sm:text-base pb-2 mb-2 leading-5 overflow-hidden max-h-14">{{ item.contents }}</div>
           <div class="meta text-xs text-neutral-500">{{ formatDate(getTimestamp(item.name)) }}</div>
         </div>
         <div class="controls flex items-center">
@@ -116,22 +116,6 @@ const switchTab = async (tabId: number) => {
   }
 }
 
-(async() => { 
-
-  await listen('clipboard', async (event: any) => {
-     const unlisten = console.log("EVENT", event.message);
-     await fetchData();
-  })
-  
-  const unlisten2 = await listen('clipboard_img', (event: any) => {
-    console.log("EVENT!", [...event.message]);   
-  })
-
-  invoke('enable_clipboard');
-
-  await fetchData();
-})()
-
 const pasteItem = (item: any) => {  }
 
 const moveItemToFolder = (item: any) => { 
@@ -151,9 +135,28 @@ const deleteItem = (item: any) => {
   });
 }
 
+(async() => { 
+  await listen('clipboard', async (event: any) => {
+    const unlisten = console.log("EVENT", event.message);
+    await fetchData();
+  })
+
+  const unlisten2 = await listen('clipboard_img', (event: any) => {
+    console.log("EVENT!", [...event.message]);   
+  })
+
+  invoke('enable_clipboard');
+
+  await fetchData();
+})()
+
 </script>
 
 <style lang="scss" scoped>
+main {
+  height: calc(100vh - 90px);
+}
+
 button {
   padding: 3px;
   width: 25px;
