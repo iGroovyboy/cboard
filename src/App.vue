@@ -43,9 +43,9 @@
 
 <script setup lang="ts">
 import { register, unregister } from '@tauri-apps/api/globalShortcut';
-import { invoke } from '@tauri-apps/api/tauri'
 import { listen } from '@tauri-apps/api/event'
 import { readDir, BaseDirectory, FileEntry, readTextFile } from '@tauri-apps/api/fs';
+import { appWindow } from '@tauri-apps/api/window'
 import { computed } from '@vue/runtime-core';
 import { ref } from 'vue';
 
@@ -116,7 +116,10 @@ const switchTab = async (tabId: number) => {
   }
 }
 
-const pasteItem = (item: any) => {  }
+const pasteItem = async (item: any) => { 
+  await appWindow.minimize();
+  invoke("paste");
+}
 
 const moveItemToFolder = (item: any) => { 
   invoke("move_clipboard_item", { 
@@ -144,6 +147,11 @@ const deleteItem = (item: any) => {
   const unlisten2 = await listen('clipboard_img', (event: any) => {
     console.log("EVENT!", [...event.message]);   
   })
+
+  await register('CommandOrControl+1', () => {
+    console.log('Shortcut triggered');
+    invoke("show_window");
+  });
 
   invoke('enable_clipboard');
 

@@ -3,12 +3,12 @@
   windows_subsystem = "windows"
 )]
 
-use inputbot::{KeybdKey::*};
+use inputbot::{KeybdKey::*, KeySequence};
 use arboard::Clipboard;
 use std::{thread, thread::sleep, time::{Duration, SystemTime, UNIX_EPOCH}, fs, path::{Path, PathBuf}};
 use tauri::{Manager, AppHandle, CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayEvent};
 // use tauri::AppHandle;
-
+// use enigo::*;
 
 // the payload type must implement `Serialize` and `Clone`.
 #[derive(Clone, serde::Serialize)]
@@ -162,6 +162,59 @@ fn hide_window(app: AppHandle) {
   menu_item.set_title("Show");
 }
 
+#[tauri::command]
+fn show_window(app: AppHandle) {
+  let window = app.get_window("main").unwrap();
+  let menu_item = app.tray_handle().get_item("toggle");
+  window.show();
+  menu_item.set_title("Hide");
+}
+
+// fn send(event_type: &EventType) {
+//   let delay = Duration::from_millis(20);
+//   match simulate(event_type) {
+//       Ok(()) => (),
+//       Err(SimulateError) => {
+//           println!("We could not send {:?}", event_type);
+//       }
+//   }
+//   // Let ths OS catchup (at least MacOS)
+//   thread::sleep(delay);
+// }
+
+#[tauri::command]
+fn paste(app: AppHandle) {
+  let mut clipboard = Clipboard::new().unwrap();
+  clipboard.set_html("123123> 1231<".into(),"123123> 1231<".into()).unwrap();
+  
+  println!("GONNA PASTE");
+
+  // hide_window(app); 
+  // sleep(Duration::from_millis(50));
+
+  LControlKey.press();
+  // sleep(Duration::from_millis(150));
+  VKey.press();
+  // sleep(Duration::from_millis(150));
+  VKey.release();
+  // sleep(Duration::from_millis(150));
+  LControlKey.release();
+  sleep(Duration::from_millis(150));
+
+  KeySequence("К УК Ы").send();
+  KeySequence("ffff").send();
+
+  // let mut enigo = Enigo::new();
+  // enigo.mouse_move_to(500, 200);
+  // enigo.key_down(Key::Control);
+  // enigo.key_click(Key::Layout('v'));
+  // enigo.key_up(Key::Control);
+
+  // enigo.key_sequence_parse("{+SHIFT}Hello World{-SHIFT}");
+
+  println!("END PASTE");
+}
+
 fn make_tray() -> SystemTray {     // <- a function that creates the system tray
   let menu = SystemTrayMenu::new()
     .add_item(CustomMenuItem::new("toggle".to_string(), "Hide"))
@@ -223,7 +276,10 @@ fn main() {
     .invoke_handler(tauri::generate_handler![
       enable_clipboard, 
       remove_clipboard_item, 
-      move_clipboard_item
+      move_clipboard_item,
+      hide_window,
+      show_window,
+      paste,
     ])
     .system_tray(make_tray())
     .on_system_tray_event(handle_tray_events)
