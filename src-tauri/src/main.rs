@@ -167,6 +167,7 @@ fn show_window(app: AppHandle) {
   let window = app.get_window("main").unwrap();
   let menu_item = app.tray_handle().get_item("toggle");
   window.show();
+  window.unminimize();
   menu_item.set_title("Hide");
 }
 
@@ -182,27 +183,44 @@ fn show_window(app: AppHandle) {
 //   thread::sleep(delay);
 // }
 
-#[tauri::command]
-fn paste(app: AppHandle) {
-  let mut clipboard = Clipboard::new().unwrap();
-  clipboard.set_html("123123> 1231<".into(),"123123> 1231<".into()).unwrap();
-  
-  println!("GONNA PASTE");
 
+#[derive(Debug, serde::Deserialize)]
+struct ClipboardItem {
+  name: String, 
+  folder: String,
+  path: String,
+  contents: Option<String>,
+}
+
+#[tauri::command]
+fn paste(item: ClipboardItem, app: AppHandle) {
   // hide_window(app); 
   // sleep(Duration::from_millis(50));
+  let from = app
+    .path_resolver()
+    .app_local_data_dir()
+    .expect("Failed to resolve app local dir")
+    .as_path()
+    .join("data")
+    .join(&item.folder)
+    .join(&item.name);
 
+  let content = fs::read_to_string(from).unwrap();
+  // let content2 = Box::leak(content.into_boxed_str());
+  // KeySequence(content2).send();
+
+  let mut clipboard = Clipboard::new().unwrap();
+  clipboard.set_html(&content, Some(&content)).unwrap();
+  
   LControlKey.press();
-  // sleep(Duration::from_millis(150));
   VKey.press();
-  // sleep(Duration::from_millis(150));
   VKey.release();
-  // sleep(Duration::from_millis(150));
   LControlKey.release();
-  sleep(Duration::from_millis(150));
 
-  KeySequence("К УК Ы").send();
-  KeySequence("ffff").send();
+  sleep(Duration::from_millis(50));
+  clipboard.clear();
+
+  // KeySequence("ffff").send();
 
   // let mut enigo = Enigo::new();
   // enigo.mouse_move_to(500, 200);

@@ -25,7 +25,7 @@
     </div>
   </nav>
 
-  <main class="ml-2 mr-1 overflow-y-scroll pr-1">
+  <main class="ml-2 mr-1 overflow-y-scroll overflow-x-hidden pr-1">
     <ul v-if="data[activeTabId] && data[activeTabId].children">
       <li v-for="(item, key) in data[activeTabId].children" :key="key" class="flex pb-2 mb-2 border-b border-neutral-700">
         <div class="item w-11/12 cursor-pointer" @click="pasteItem(item)">
@@ -51,11 +51,38 @@ import { ref } from 'vue';
 
 const invoke = window.__TAURI__.invoke;
 
+enum Folder {
+  Clipboard = 0,
+  Favorites = 1,
+}
+
+const FOLDER_NAME = {
+  Clipboard: "clipboard",
+  Favorites: "favorites",
+}
+
+const DIR_DATA = "data";
+
+interface ClipboardItem {
+  name: string, // "1672922494060.txt"
+  folder: string, // "favorites"
+  path: string, // "C:\\Users\\...\\AppData\\Local\\...\\data\\favorites"
+  contents?: string,
+}
+
+interface ClipboardFolder {
+  children: [] | ClipboardItem[],
+  name: string,
+  path: string, // "C:\\Users\\...\\AppData\\Local\\...\\data\\favorites"
+}
+
+type ClipboardData = ClipboardFolder[];
+
 const activeTabId = ref(Folder.Clipboard);
 
-const data = ref<null | FileEntry>(null);
+const data = ref<null | ClipboardData | FileEntry[]>(null);
 
-const formatDate = (timestamp: any) => { 
+const formatDate = (timestamp: string) => { 
   var date = new Date(parseInt(timestamp));
     var hours = date.getHours();
     var minutes = "0" + date.getMinutes();
@@ -73,20 +100,10 @@ const getTimestamp = (filename: string) => filename.split('.').slice(0, -1).join
 
 const isImage = (filename: string) => !filename.includes(".txt");
 
-enum Folder {
-  Clipboard = 0,
-  Favorites = 1,
-}
-
-const FOLDER_NAME = {
-  Clipboard: "clipboard",
-  Favorites: "favorites",
-}
-
 const fetchData = () => { 
   return new Promise(async (resolve, reject) => {
     try {
-      data.value = await readDir('data', { dir: BaseDirectory.AppLocalData, recursive: true });
+      data.value = await readDir(DIR_DATA, { dir: BaseDirectory.AppLocalData, recursive: true });
       console.log("FETCH", data.value);
       
       if (!data.value || !data.value[Folder.Clipboard] || !data.value[Folder.Favorites]) {
@@ -116,12 +133,12 @@ const switchTab = async (tabId: number) => {
   }
 }
 
-const pasteItem = async (item: any) => { 
-  await appWindow.minimize();
-  invoke("paste");
+const pasteItem = async (item: ClipboardItem) => { 
+  await appWindow.hide();
+  invoke("paste", { item: item });
 }
 
-const moveItemToFolder = (item: any) => { 
+const moveItemToFolder = (item: ClipboardItem) => { 
   invoke("move_clipboard_item", { 
     from: item.path,
     filename: item.name,
@@ -129,7 +146,7 @@ const moveItemToFolder = (item: any) => {
   });
 }
 
-const deleteItem = (item: any) => {
+const deleteItem = (item: ClipboardItem) => {
   console.log(`REMOVE: ${item.folder}/${item.name}`);
   
   invoke("remove_clipboard_item", { 
