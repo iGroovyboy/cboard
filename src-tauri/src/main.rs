@@ -63,7 +63,7 @@ fn save_clipboard(contents: String, is_text: bool, app: &tauri::AppHandle) {
 }
 
 #[tauri::command]
-fn remove_clipboard_item(filename: String, folder: String, app: tauri::AppHandle) {
+fn remove_clipboard_item(filename: String, folder: String, app: tauri::AppHandle) { // TODO: use ClipboardItem
   let file = app
     .path_resolver()
     .app_local_data_dir()
@@ -76,6 +76,22 @@ fn remove_clipboard_item(filename: String, folder: String, app: tauri::AppHandle
   fs::remove_file(&file);
   println!("removed file {:?}", file);
   app.emit_all("clipboard", Payload { message: "remove_clipboard_item".to_string() }).unwrap();
+}
+
+#[tauri::command]
+fn deleteAllByFolder(folder: String, app: tauri::AppHandle) {
+  let path = app
+    .path_resolver()
+    .app_local_data_dir()
+    .expect("Failed to resolve app local dir")
+    .as_path()
+    .join("data")
+    .join(&folder);
+
+  fs::remove_dir_all(&path).unwrap();
+  fs::create_dir(&path).unwrap();
+  println!("removed contents of {:?}", &folder);
+  app.emit_all("clipboard", Payload { message: "remove_clipboard_items".to_string() }).unwrap();
 }
 
 #[tauri::command]
@@ -193,6 +209,11 @@ struct ClipboardItem {
 }
 
 #[tauri::command]
+fn quit() {
+  std::process::exit(0);
+}
+
+#[tauri::command]
 fn paste(item: ClipboardItem, app: AppHandle) {
   // hide_window(app); 
   // sleep(Duration::from_millis(50));
@@ -291,13 +312,24 @@ fn handle_tray_events(app: &AppHandle, event: SystemTrayEvent) {
 
 fn main() {
   tauri::Builder::default()
+    .setup(|app| {
+      #[cfg(debug_assertions)] // only include this code on debug builds
+      {
+        let window = app.get_window("main").unwrap();
+        window.open_devtools();
+        window.close_devtools();
+      }
+      Ok(())
+    })
     .invoke_handler(tauri::generate_handler![
       enable_clipboard, 
       remove_clipboard_item, 
+      deleteAllByFolder,
       move_clipboard_item,
       hide_window,
       show_window,
       paste,
+      quit,
     ])
     .system_tray(make_tray())
     .on_system_tray_event(handle_tray_events)
