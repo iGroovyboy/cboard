@@ -10,6 +10,8 @@ use tauri::{Manager, AppHandle, CustomMenuItem, SystemTray, SystemTrayMenu, Syst
 use std::sync::{Arc, Mutex};
 use tauri::State;
 
+const MAX_CLIPBOARD_ITEMS: i32 = 150;
+
 // the payload type must implement `Serialize` and `Clone`.
 #[derive(Clone, serde::Serialize)]
 struct Payload {
@@ -44,8 +46,37 @@ fn get_timestamp() -> String {
 //   return p;
 // }
 
+fn remove_extra_files(folder: String, max_files_count: i32, app: &tauri::AppHandle) {
+  let path = app
+    .path_resolver()
+    .app_local_data_dir()
+    .expect("Failed to resolve app local dir")
+    .as_path()
+    .join("data")
+    .join(folder);
+
+  let filesCount = (fs::read_dir(&path).unwrap().count() as i32) + 1 ;
+  println!("Count: {}", &filesCount);
+
+  let mut files = fs::read_dir(&path).unwrap();
+  if filesCount > max_files_count {
+    let mut leftToRemove = filesCount - max_files_count;
+
+    while let Some(file) = files.next() {
+      if leftToRemove < 1 {
+        break;
+      } 
+      leftToRemove -= 1;
+
+      fs::remove_file(file.unwrap().path()).unwrap();
+    }
+  }
+}
+
 // TODO: detect/save image
 fn save_clipboard(contents: String, is_text: bool, app: &tauri::AppHandle) {
+  let default_folder = "clipboard".to_string();
+
   let app_dir = app
     .path_resolver()
     .app_local_data_dir()
@@ -54,7 +85,7 @@ fn save_clipboard(contents: String, is_text: bool, app: &tauri::AppHandle) {
 
   let p = app_dir.as_path()
     .join("data")
-    .join("clipboard");
+    .join(&default_folder);
   
   let f =  p.join([get_timestamp(), ".txt".to_string()].concat());
 
@@ -62,6 +93,9 @@ fn save_clipboard(contents: String, is_text: bool, app: &tauri::AppHandle) {
 
   fs::create_dir_all(p).unwrap();
   fs::write(f, &contents).expect("Unable to write file");
+
+  remove_extra_files(default_folder, MAX_CLIPBOARD_ITEMS, &app);
+
   app.emit_all("clipboard", Payload { message: contents }).unwrap();
 }
 
