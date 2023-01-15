@@ -7,13 +7,17 @@ use inputbot::{KeybdKey::*, KeySequence};
 use arboard::Clipboard;
 use std::{thread, thread::sleep, time::{Duration, SystemTime, UNIX_EPOCH}, fs, path::{Path, PathBuf}};
 use tauri::{Manager, AppHandle, CustomMenuItem, SystemTray, SystemTrayMenu, SystemTrayEvent};
-// use tauri::AppHandle;
-// use enigo::*;
+use std::sync::{Arc, Mutex};
+use tauri::State;
 
 // the payload type must implement `Serialize` and `Clone`.
 #[derive(Clone, serde::Serialize)]
 struct Payload {
   message: String,
+}
+
+struct ClipboardPreviousText{
+  text: Arc<Mutex<String>>
 }
 
 fn get_timestamp() -> String {
@@ -40,7 +44,6 @@ fn get_timestamp() -> String {
 //   return p;
 // }
 
-// TODO: check if previous record has same contents as current and skip if they are equal
 // TODO: detect/save image
 fn save_clipboard(contents: String, is_text: bool, app: &tauri::AppHandle) {
   let app_dir = app
@@ -111,8 +114,12 @@ fn move_clipboard_item(from: String, filename: String, folder: String, app: taur
 }
 
 #[tauri::command]
-fn enable_clipboard(app: tauri::AppHandle) -> Result<String, String> {
-  println!("Clipboard management was enabled!");
+fn enable_clipboard(app: tauri::AppHandle, state: State<ClipboardPreviousText>) -> Result<String, String> {
+  let stateClone = Arc::clone(&state.text);
+  let mut stateText= stateClone.lock().unwrap();
+  *stateText = "wasd".to_string(); // TODO: load init here?
+
+  println!("Clipboard management was enabled! {}", *stateText);
 
   let app_clone = app.clone();
 
@@ -152,6 +159,7 @@ fn enable_clipboard(app: tauri::AppHandle) -> Result<String, String> {
     }
   });
 
+  let stateClone = stateClone.clone();
   CKey.bind(move || {
     if LControlKey.is_pressed() {
       // before sleep we get access to prev clipboard data
@@ -160,7 +168,14 @@ fn enable_clipboard(app: tauri::AppHandle) -> Result<String, String> {
       // here we have just recently clipboard data
       let mut clipboard = Clipboard::new().unwrap();
       println!("Clipboard text: {}", clipboard.get_text().unwrap());
-      save_clipboard(clipboard.get_text().unwrap().to_string(), true, &app_clone);
+
+      let mut stateText = stateClone.lock().unwrap();
+      if *stateText == clipboard.get_text().unwrap() {
+        println!("Ignore: is dupe");
+      } else {
+        *stateText = clipboard.get_text().unwrap().to_string();
+        save_clipboard(clipboard.get_text().unwrap().to_string(), true, &app_clone);
+      }
     }
   });
 
@@ -254,6 +269,7 @@ fn paste(item: ClipboardItem, app: AppHandle) {
   println!("END PASTE");
 }
 
+// TODO: move to separate module
 fn make_tray() -> SystemTray {     // <- a function that creates the system tray
   let menu = SystemTrayMenu::new()
     .add_item(CustomMenuItem::new("toggle".to_string(), "Hide"))
@@ -312,6 +328,7 @@ fn handle_tray_events(app: &AppHandle, event: SystemTrayEvent) {
 
 fn main() {
   tauri::Builder::default()
+    .manage(ClipboardPreviousText { text: Default::default() })
     .setup(|app| {
       #[cfg(debug_assertions)] // only include this code on debug builds
       {
