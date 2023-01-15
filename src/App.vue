@@ -18,10 +18,10 @@
           {{ data[Folder.Favorites].children.length }}
         </div>
       </li>
-      <li class="p-3 px-5 text-xs sm:text-base border-b border-gray-500 flex shrink-0">
+      <!-- <li class="p-3 px-5 text-xs sm:text-base border-b border-gray-500 flex shrink-0">
         <img src="./assets/add.svg" alt="" class="mt-[-3px]">
         Add
-      </li>
+      </li> -->
       <li class="w-[-webkit-fill-available] p-3 px-5 border-b border-gray-500"></li>
       <li @click="mainMenuShown = !mainMenuShown" class="py-2 border-b border-gray-500">
         <svg xmlns="http://www.w3.org/2000/svg" width="2rem" height="20px" preserveAspectRatio="xMidYMid meet" ><path fill="white" d="M3 18v-2h18v2Zm0-5v-2h18v2Zm0-5V6h18v2Z"/></svg>
