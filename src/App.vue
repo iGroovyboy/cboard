@@ -111,12 +111,26 @@ const fetchData = () => {
         resolve([]);
       }
 
+      // TODO: mb move to backend
       for (const [f, folder] of Object.entries(data.value)) {
         for (const [c, file] of Object.entries((folder as ClipboardFolder).children)) {
           const contents = await readTextFile(file.path);
           data.value[f].children[c].contents = contents;
           data.value[f].children[c].folder = folder.name;
         }
+
+        data.value[f].children.sort((a, b) => {
+          const nameA = a.name.toUpperCase();
+          const nameB = b.name.toUpperCase();
+
+          if (nameA > nameB) {
+            return -1;
+          }
+          if (nameA < nameB) {
+            return 1;
+          }
+          return 0;
+        });
       }
 
       resolve(data.value);
