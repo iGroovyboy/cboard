@@ -1,0 +1,69 @@
+<template>
+    <div v-if="type" class="menu-wrapper absolute top-0 w-full h-full z-100">
+        <ul v-if="type === MENU_TYPE.Context" class="menu">
+            <li @click="action(ACTION.DeleteAll)">Delete all</li>
+        </ul>
+
+        <ul v-else-if="type === MENU_TYPE.Main" class="menu main">
+            <li @click="action(ACTION.About)">About</li>
+            <!-- <li @click="mainSettings">Settings</li> -->
+            <li @click="action(ACTION.Quit)">Quit</li>
+        </ul>
+    </div>
+</template>
+
+<script setup lang="ts">
+import { Folder, MENU_TYPE } from "../common/constants";
+import { folderDeleteAll, quit } from "../services/backend";
+
+const props = defineProps({
+    type: {
+        type: Number,
+        default: MENU_TYPE.Context,
+    },
+    currentFolder: {
+        type: Number,
+        default: Folder.Clipboard,
+    },
+});
+
+const emit = defineEmits(['click']);
+
+const enum ACTION {
+    None,
+    Quit,
+    DeleteAll,
+    About,
+};
+
+const action = (action: ACTION) => {
+    emit('click');
+
+    switch (action) {
+        case ACTION.DeleteAll:
+            folderDeleteAll(props.currentFolder);
+            break;
+        case ACTION.About:
+            alert("Clipboard manager\n (c) Anton Babintsev, 2023\n https://github.com/iGroovyboy")
+            break;
+        case ACTION.Quit:
+            quit();
+        default:
+            break;
+    }
+}
+</script>
+
+<style scoped lang="scss">
+.menu {
+    @apply absolute rounded-lg border border-neutral-500/30 w-[50%] text-[12px] py-2 backdrop-blur shadow-md;
+
+    &.main {
+        @apply top-8 left-auto right-2
+    }
+
+    li {
+        @apply mb-2 last:mb-0 px-4 hover:bg-neutral-500/20
+    }
+}
+</style>
