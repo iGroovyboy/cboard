@@ -40,7 +40,7 @@
   </nav>
 
   <main class="ml-2 mr-1 overflow-y-scroll overflow-x-hidden pr-1">
-    <ul v-if="data[activeTabId] && data[activeTabId].children">
+    <ul v-if="data && data[activeTabId] && data[activeTabId].children">
       <li v-for="(item, key) in data[activeTabId].children" :key="key" class="flex pb-2 mb-2 border-b border-neutral-700">
         <div class="item w-11/12 cursor-pointer" @click="pasteItem(item)">
           <div class="value text-xs sm:text-base pb-2 mb-2 leading-5 overflow-hidden max-h-14">{{ item.contents }}</div>
@@ -60,12 +60,13 @@
 <script setup lang="ts">
 import { register, unregister } from '@tauri-apps/api/globalShortcut';
 import { listen } from '@tauri-apps/api/event'
-import { readDir, BaseDirectory, FileEntry, readTextFile } from '@tauri-apps/api/fs';
+import { FileEntry } from '@tauri-apps/api/fs';
 import { appWindow } from '@tauri-apps/api/window'
-import { computed, nextTick } from '@vue/runtime-core';
-import { ref } from 'vue';
-import { DIR_DATA, Folder, FOLDER_NAME, FOLDER_NAME_MAP, MENU_TYPE } from './common/constants';
-import { ClipboardData, ClipboardFolder } from './common/interfaces';
+import { onBeforeMount, ref } from 'vue';
+import { Folder, FOLDER_NAME, MENU_TYPE } from './common/constants';
+import { ClipboardData } from './common/interfaces';
+import { getFilesData } from './services/backend';
+import { formatDate } from './common/helpers';
 import AppPopup from './components/AppPopup.vue';
 
 const invoke = window.__TAURI__.invoke;
@@ -83,63 +84,13 @@ const contextMenu = (e: PointerEvent, id: number) => {
   menuType.value = MENU_TYPE.Context;
 }
 
-const formatDate = (timestamp: string) => {
-  var date = new Date(parseInt(timestamp));
-  var hours = date.getHours();
-  var minutes = "0" + date.getMinutes();
-  var seconds = "0" + date.getSeconds();
-
-  var y = date.getFullYear();
-  var m = "0" + (date.getMonth() + 1);
-  var d = "0" + date.getDate();
-
-  return `${y}-${m.substr(-2)}-${d.substr(-2)} ` + hours + ':' + minutes.substr(-2) + ':' + seconds.substr(-2);
-
-}
-
 const getTimestamp = (filename: string) => filename.split('.').slice(0, -1).join('.');
 
 const isImage = (filename: string) => !filename.includes(".txt");
 
-const fetchData = () => {
-  return new Promise(async (resolve, reject) => {
-    try {
-      data.value = await readDir(DIR_DATA, { dir: BaseDirectory.AppLocalData, recursive: true });
-      console.log("FETCH", data.value);
-
-      if (!data.value || !data.value[Folder.Clipboard] || !data.value[Folder.Favorites]) {
-        resolve([]);
-      }
-
-      // TODO: mb move to backend
-      for (const [f, folder] of Object.entries(data.value)) {
-        for (const [c, file] of Object.entries((folder as ClipboardFolder).children)) {
-          const contents = await readTextFile(file.path);
-          data.value[f].children[c].contents = contents;
-          data.value[f].children[c].folder = folder.name;
-        }
-
-        data.value[f].children.sort((a, b) => {
-          const nameA = a.name.toUpperCase();
-          const nameB = b.name.toUpperCase();
-
-          if (nameA > nameB) {
-            return -1;
-          }
-          if (nameA < nameB) {
-            return 1;
-          }
-          return 0;
-        });
-      }
-
-      resolve(data.value);
-    } catch (e) {
-      reject(new Error(e));
-    }
-
-  });
-}
+const fetchData = async () => {
+  data.value = await getFilesData();
+};
 
 const switchTab = async (tabId: number) => {
   if (tabId !== activeTabId.value) {
@@ -170,9 +121,13 @@ const deleteItem = (item: ClipboardItem) => {
   });
 }
 
-(async () => {
+
+onBeforeMount(async () => {
+  // document.addEventListener('contextmenu', event => event.preventDefault());
+  console.log('START');
+
   await listen('clipboard', async (event: any) => {
-    const unlisten = console.log("EVENT", event.message);
+    const unlisten = console.log("EVENT", event);
     await fetchData();
   })
 
@@ -188,9 +143,8 @@ const deleteItem = (item: ClipboardItem) => {
   invoke('enable_clipboard');
 
   await fetchData();
-})()
+})
 
-// document.addEventListener('contextmenu', event => event.preventDefault());
 
 </script>
 
