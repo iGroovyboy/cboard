@@ -20,3 +20,8 @@ export const FOLDER_NAME_MAP = {
 };
 
 export const DIR_DATA = "data";
+
+export const FILE_EXT = {
+  PNG: "png",
+  TXT: "txt",
+};

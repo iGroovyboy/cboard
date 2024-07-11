@@ -17,3 +17,24 @@ export const formatDate = (timestamp: string) => {
     seconds.substr(-2)
   );
 };
+
+export const getFileTypeByFilename = (filename: string) => {
+  if (typeof filename !== "string") {
+    return "";
+  }
+
+  const parts = filename.split(".");
+  return parts && parts.length > 1 ? parts.pop()?.toLowerCase() : "";
+};
+
+export const truncateString = (
+  str: string,
+  maxLength = 250,
+  suffix = "..."
+) => {
+  if (typeof str !== "string") {
+    return str;
+  }
+
+  return str.length > maxLength ? str.substring(0, maxLength) + suffix : str;
+};
