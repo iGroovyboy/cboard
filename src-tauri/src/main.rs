@@ -13,10 +13,12 @@ use inputbot::{KeybdKey::*};
 use arboard::{Clipboard, ImageData};
 use std::{thread, thread::sleep, time::{Duration}, fs};
 use std::borrow::Cow;
+use std::ffi::OsStr;
 use std::path::PathBuf;
 use tauri::{Manager, AppHandle};
 use std::sync::{Arc, Mutex};
 use tauri::State;
+use app::FileTypes;
 use crate::clipboard::image::{image_eq, save_to_file};
 
 // TODO: read from user settings
@@ -133,6 +135,7 @@ fn enable_clipboard(app: tauri::AppHandle, state: State<ClipboardPreviousText>) 
     }
   });
 
+
   // TODO: move to mod
   // TODO: test/fix bind on linux/mac
   // event listener: Ctrl + C
@@ -144,6 +147,8 @@ fn enable_clipboard(app: tauri::AppHandle, state: State<ClipboardPreviousText>) 
 
       // here we have just recently clipboard data
       let mut clipboard = Clipboard::new().unwrap();
+
+      // TODO: this will trigger error if user copies image
       println!("Clipboard text: {}", clipboard.get_text().unwrap());
 
       let mut stateText = stateClone.lock().unwrap();
@@ -190,13 +195,35 @@ fn paste(item: ClipboardItem, app: AppHandle) {
     .join(&item.folder)
     .join(&item.name);
 
-  let content = fs::read_to_string(from).unwrap();
-  // let content2 = Box::leak(content.into_boxed_str());
-  // KeySequence(content2).send();
+  println!("paste -> {:#?}", from.extension().unwrap());
 
   let mut clipboard = Clipboard::new().unwrap();
-  clipboard.set_html(&content, Some(&content)).unwrap();
 
+  // TODO: fix unwraps?
+  // TODO: move to separate mods? use patterns?
+  match from.extension().unwrap().to_str().unwrap() {
+    FileTypes::TXT => {
+      let content = fs::read_to_string(from).unwrap();
+
+      clipboard.set_html(&content, Some(&content)).unwrap();
+    },
+    FileTypes::PNG => {
+      let img = image::io::Reader::open(from).unwrap().decode().unwrap();
+      let rgba_image = img.to_rgba8();
+      let (width, height) = rgba_image.dimensions();
+      let bytes = rgba_image.into_raw();
+      let image_data = arboard::ImageData {
+        width: width as usize,
+        height: height as usize,
+        bytes: std::borrow::Cow::Owned(bytes),
+      };
+
+      clipboard.set_image(image_data).unwrap();
+    },
+    &_ => {}
+  }
+
+  // TODO: move to mod
   LControlKey.press();
   VKey.press();
   VKey.release();
@@ -204,18 +231,6 @@ fn paste(item: ClipboardItem, app: AppHandle) {
 
   sleep(Duration::from_millis(50));
   clipboard.clear();
-
-  // KeySequence("ffff").send();
-
-  // let mut enigo = Enigo::new();
-  // enigo.mouse_move_to(500, 200);
-  // enigo.key_down(Key::Control);
-  // enigo.key_click(Key::Layout('v'));
-  // enigo.key_up(Key::Control);
-
-  // enigo.key_sequence_parse("{+SHIFT}Hello World{-SHIFT}");
-
-  println!("END PASTE");
 }
 
 fn main() {
