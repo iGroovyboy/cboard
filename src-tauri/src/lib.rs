@@ -29,6 +29,8 @@ pub fn get_tauri_handle() -> &'static AppHandle {
 
 pub static CLIPBOARD: OnceLock<Arc<Mutex<Clipboard>>> = OnceLock::new();
 
+pub static PREV_TEXT: OnceLock<Arc<Mutex<Option<String>>>> = OnceLock::new();
+
 pub static PREV_IMAGE: OnceLock<Arc<Mutex<Option<ImageData>>>> = OnceLock::new();
 
 pub mod my_clipboard {
@@ -103,8 +105,27 @@ pub mod my_clipboard {
     pub mod text {
         use std::fs;
         use std::path::PathBuf;
+        use std::sync::{Arc, Mutex};
 
         use crate::my_clipboard::get_instance;
+        use crate::PREV_TEXT;
+
+        pub fn get_previous() -> Arc<Mutex<Option<String>>> {
+            PREV_TEXT.get_or_init(|| { Arc::new(Mutex::new(None)) }).clone()
+        }
+
+        pub fn get_previous_text() -> Result<Option<String>, String> {
+            let prev_text = get_previous();
+            let prev_text = prev_text.lock().map_err(|e| e.to_string())?;
+            Ok(prev_text.clone())
+        }
+
+        pub fn set_previous_text(text: String) -> Result<(), String> {
+            let prev_text = get_previous();
+            let mut prev_text = prev_text.lock().map_err(|e| e.to_string())?;
+            *prev_text = Some(text);
+            Ok(())
+        }
 
         pub fn get() -> Result<String, String> {
             let clipboard = get_instance();

@@ -9,7 +9,6 @@ use std::sync::{Arc, Mutex};
 use arboard::Clipboard;
 use inputbot::KeybdKey::*;
 use tauri::{AppHandle, Manager};
-use tauri::State;
 
 use app::{APP_HANDLE, ClipboardContent, FileTypes, my_clipboard};
 
@@ -33,12 +32,13 @@ struct ClipboardItem {
 
 
 #[tauri::command]
-fn enable_clipboard(app: tauri::AppHandle, state: State<ClipboardPreviousText>) -> Result<String, String> {
-    let stateClone = Arc::clone(&state.text);
-    let mut stateText = stateClone.lock().unwrap();
-    *stateText = "wasd".to_string(); // TODO: load init here?
+fn enable_clipboard() -> Result<String, String> {
+    // let stateClone = Arc::clone(&state.text);
+    // let mut stateText = stateClone.lock().unwrap();
 
-    println!("Clipboard management was enabled! {}", *stateText);
+    // *stateText = "wasd".to_string(); // TODO: load init here?
+
+    println!("Clipboard management was enabled!");
 
     // TODO: move to mod
     // image can get to clipboard in many ways, so we use interval-based checker
@@ -61,26 +61,30 @@ fn enable_clipboard(app: tauri::AppHandle, state: State<ClipboardPreviousText>) 
     // TODO: move to mod
     // TODO: test/fix bind on linux/mac
     // event listener: Ctrl + C
-    let stateClone = stateClone.clone();
     CKey.bind(move || {
         if LControlKey.is_pressed() {
             // before sleep we get access to prev clipboard data
             sleep(Duration::from_millis(10));
 
             // here we have just recently clipboard data
-            let mut clipboard = Clipboard::new().unwrap();
+            let clipboard = my_clipboard::get_instance();
+            let mut clipboard_lock = clipboard.lock().unwrap();
 
-            // TODO: this will trigger error if user copies image
-            match clipboard.get_text() {
+            match clipboard_lock.get_text() {
                 Ok(text) => {
-                    let mut stateText = stateClone.lock().unwrap();
-                    if *stateText == clipboard.get_text().unwrap() {
-                        println!("Ignore: is dupe");
-                    } else {
-                        *stateText = clipboard.get_text().unwrap().to_string();
-                        my_clipboard::save_contents(
-                            ClipboardContent::Text(clipboard.get_text().unwrap().to_string())
-                        );
+                    let mut previous_text = my_clipboard::text::get_previous_text().unwrap();
+                    match previous_text {
+                        None => {
+                            my_clipboard::text::set_previous_text(text.clone());
+                            my_clipboard::save_contents(ClipboardContent::Text(text));
+                        }
+                        Some(prev_text) => {
+                            if text != prev_text {
+                                my_clipboard::save_contents(
+                                    ClipboardContent::Text(text)
+                                );
+                            }
+                        }
                     }
                 }
                 Err(_) => {
@@ -161,7 +165,6 @@ fn paste(item: ClipboardItem, app: AppHandle) {
 
 fn main() {
     tauri::Builder::default()
-        .manage(ClipboardPreviousText { text: Default::default() })
         .setup(|app| {
             #[cfg(debug_assertions)] // only include this code on debug builds
             {
