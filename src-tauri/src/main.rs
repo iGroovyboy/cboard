@@ -10,13 +10,12 @@ use arboard::Clipboard;
 use inputbot::KeybdKey::*;
 use tauri::{AppHandle, Manager};
 
-use app::{APP_HANDLE, ClipboardContent, FileTypes, my_clipboard};
+use app::{APP_HANDLE, FileTypes, my_clipboard};
 
 mod tray;
 mod helpers;
 mod filesys;
 mod window;
-mod clipboard;
 
 struct ClipboardPreviousText {
     text: Arc<Mutex<String>>,
@@ -33,14 +32,6 @@ struct ClipboardItem {
 
 #[tauri::command]
 fn enable_clipboard() -> Result<String, String> {
-    // let stateClone = Arc::clone(&state.text);
-    // let mut stateText = stateClone.lock().unwrap();
-
-    // *stateText = "wasd".to_string(); // TODO: load init here?
-
-    println!("Clipboard management was enabled!");
-
-    // TODO: move to mod
     // image can get to clipboard in many ways, so we use interval-based checker
     thread::spawn(move || {
         my_clipboard::image::init_prev_image().unwrap();
@@ -52,45 +43,19 @@ fn enable_clipboard() -> Result<String, String> {
                 continue;
             }
 
-            // TODO: will get clipboard and prev_image instances
-            // TODO: every cycle - is it ok?
+            // TODO: will get clipboard and prev_image instances every cycle - mb profile it?
             my_clipboard::image::on_copy();
         }
     });
 
-    // TODO: move to mod
     // TODO: test/fix bind on linux/mac
     // event listener: Ctrl + C
     CKey.bind(move || {
         if LControlKey.is_pressed() {
-            // before sleep we get access to prev clipboard data
-            sleep(Duration::from_millis(10));
+            // without sleep we get access to prev clipboard data
+            sleep(Duration::from_millis(100));
 
-            // here we have just recently clipboard data
-            let clipboard = my_clipboard::get_instance();
-            let mut clipboard_lock = clipboard.lock().unwrap();
-
-            match clipboard_lock.get_text() {
-                Ok(text) => {
-                    let mut previous_text = my_clipboard::text::get_previous_text().unwrap();
-                    match previous_text {
-                        None => {
-                            my_clipboard::text::set_previous_text(text.clone());
-                            my_clipboard::save_contents(ClipboardContent::Text(text));
-                        }
-                        Some(prev_text) => {
-                            if text != prev_text {
-                                my_clipboard::save_contents(
-                                    ClipboardContent::Text(text)
-                                );
-                            }
-                        }
-                    }
-                }
-                Err(_) => {
-                    my_clipboard::image::on_copy();
-                }
-            }
+            my_clipboard::text::on_copy();
         }
     });
 

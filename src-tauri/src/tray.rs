@@ -1,6 +1,6 @@
-use tauri::{AppHandle, CustomMenuItem, SystemTray, SystemTrayEvent, SystemTrayMenu, Manager};
+use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
-pub fn make_tray() -> SystemTray {     // <- a function that creates the system tray
+pub fn make_tray() -> SystemTray {
     let menu = SystemTrayMenu::new()
         .add_item(CustomMenuItem::new("toggle".to_string(), "Hide"))
         .add_item(CustomMenuItem::new("quit".to_string(), "Quit"));
@@ -31,7 +31,6 @@ pub fn handle_tray_events(app: &AppHandle, event: SystemTrayEvent) {
             println!("system tray received a right click");
         }
         SystemTrayEvent::MenuItemClick { id, .. } => {
-
             match id.as_str() {
                 "quit" => {
                     println!("bb");

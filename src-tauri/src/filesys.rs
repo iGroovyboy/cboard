@@ -1,4 +1,5 @@
 use std::fs;
+
 use tauri::Manager;
 
 #[derive(Clone, serde::Serialize)]
@@ -15,7 +16,7 @@ pub fn remove_extra_files(folder: String, max_files_count: i32, app: &tauri::App
         .join("data")
         .join(folder);
 
-    let filesCount = (fs::read_dir(&path).unwrap().count() as i32) + 1 ;
+    let filesCount = (fs::read_dir(&path).unwrap().count() as i32) + 1;
     println!("Count: {}", &filesCount);
 
     let mut files = fs::read_dir(&path).unwrap();
@@ -81,19 +82,3 @@ pub fn move_clipboard_item(from: String, filename: String, folder: String, app: 
     println!("moved file {} to {:?}", &filename, to);
     app.emit_all("clipboard", Payload { message: "move_clipboard_item".to_string() }).unwrap();
 }
-
-// fn data_path(filename: String, folder: String) -> PathBuf {
-//   app_handle();
-
-//   let app_dir = app
-//     .path_resolver()
-//     .app_local_data_dir()
-//     .expect("Failed to resolve app local dir");
-
-
-//   let p = app_dir.as_path()
-//     .join("data")
-//     .join(folder);
-
-//   return p;
-// }

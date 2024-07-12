@@ -88,7 +88,6 @@ pub mod my_clipboard {
         match contents {
             ClipboardContent::Text(data) => {
                 let f = p.join([helpers::get_timestamp(), ".txt".to_string()].concat());
-                //fs::write(f, &contents).expect("Unable to write file");
                 text::save(&f, &data);
             }
             ClipboardContent::Image(data) => {
@@ -107,8 +106,8 @@ pub mod my_clipboard {
         use std::path::PathBuf;
         use std::sync::{Arc, Mutex};
 
+        use crate::{ClipboardContent, my_clipboard, PREV_TEXT};
         use crate::my_clipboard::get_instance;
-        use crate::PREV_TEXT;
 
         pub fn get_previous() -> Arc<Mutex<Option<String>>> {
             PREV_TEXT.get_or_init(|| { Arc::new(Mutex::new(None)) }).clone()
@@ -143,18 +142,30 @@ pub mod my_clipboard {
             fs::write(path, contents).expect("Unable to write file");
         }
 
-        pub fn on_copy() {}
-        // fn read_from_clipboard() -> Result<String, String> {
-        //     let clipboard = Self::get_clipboard();
-        //     let mut clipboard = clipboard.lock().map_err(|e| e.to_string())?;
-        //     clipboard.get_text().map_err(|e| e.to_string())
-        // }
+        pub fn on_copy() {
+            let clipboard = my_clipboard::get_instance();
+            let mut clipboard_lock = clipboard.lock().unwrap();
 
-        // pub fn write_to_clipboard(text: String) -> Result<(), String> {
-        //     let clipboard = Self::get_clipboard();
-        //     let mut clipboard = clipboard.lock().expect("Couldn't lock the clipboard instance");
-        //     clipboard.set_text(text).map_err(|e| e.to_string())
-        // }
+            match clipboard_lock.get_text() {
+                Ok(text) => {
+                    let mut previous_text = get_previous_text().unwrap();
+                    match previous_text {
+                        None => {
+                            set_previous_text(text.clone());
+                            my_clipboard::save_contents(ClipboardContent::Text(text));
+                        }
+                        Some(prev_text) => {
+                            if text != prev_text {
+                                my_clipboard::save_contents(ClipboardContent::Text(text));
+                            }
+                        }
+                    }
+                }
+                Err(_) => {
+                    my_clipboard::image::on_copy();
+                }
+            }
+        }
 
         //EXAMPLE
         // pub fn spawn_thread_and_write(text: String) -> Result<(), String> {
@@ -245,7 +256,6 @@ pub mod my_clipboard {
                 Some(ref i) => {
                     if !eq(&i, &image_data) {
                         set_prev_image(image_data.clone()).expect("set_prev_image error");
-                        ;
                         my_clipboard::save_contents(ClipboardContent::Image(image_data));
                     }
                 }
