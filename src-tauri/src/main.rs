@@ -12,22 +12,11 @@ mod clipboard;
 use inputbot::{KeybdKey::*};
 use arboard::{Clipboard, ImageData};
 use std::{thread, thread::sleep, time::{Duration}, fs};
-use std::borrow::Cow;
-use std::ffi::OsStr;
 use std::path::PathBuf;
 use tauri::{Manager, AppHandle};
 use std::sync::{Arc, Mutex};
 use tauri::State;
-use app::FileTypes;
-use crate::clipboard::image::{image_eq, save_to_file};
-
-// TODO: read from user settings
-static MAX_CLIPBOARD_ITEMS: i32 = 150;
-
-#[derive(Clone, serde::Serialize)]
-struct Payload {
-  message: String,
-}
+use app::{ClipboardContent, FileTypes, my_clipboard};
 
 struct ClipboardPreviousText{
   text: Arc<Mutex<String>>
@@ -41,49 +30,6 @@ struct ClipboardItem {
   contents: Option<String>,
 }
 
-fn save_text(path: &PathBuf, contents: &String) {
-  fs::write(path, contents).expect("Unable to write file");
-}
-
-enum ClipboardContent<'a> {
-  Text(String),
-  Image(ImageData<'a>),
-}
-
-fn save_clipboard(contents: ClipboardContent, app: &tauri::AppHandle)
-{
-  let default_folder = "clipboard".to_string();
-
-  let app_dir = app
-    .path_resolver()
-    .app_local_data_dir()
-    .expect("Failed to resolve app local dir");
-
-
-  let p = app_dir.as_path()
-    .join("data")
-    .join(&default_folder);
-
-  println!("save_clipboard: {}", p.display());
-
-  fs::create_dir_all(&p).unwrap();
-
-  match contents {
-    ClipboardContent::Text(data) => {
-      let f = p.join([helpers::get_timestamp(), ".txt".to_string()].concat());
-      //fs::write(f, &contents).expect("Unable to write file");
-      save_text(&f, &data);
-    },
-    ClipboardContent::Image(data) => {
-        let f = p.join([helpers::get_timestamp(), ".png".to_string()].concat());
-        save_to_file(&f, &data);
-    }
-  }
-
-  filesys::remove_extra_files(default_folder, MAX_CLIPBOARD_ITEMS, &app);
-
-  app.emit_all("clipboard", Payload { message: String::from("contents") }).unwrap();
-}
 
 #[tauri::command]
 fn enable_clipboard(app: tauri::AppHandle, state: State<ClipboardPreviousText>) -> Result<String, String> {
@@ -100,13 +46,12 @@ fn enable_clipboard(app: tauri::AppHandle, state: State<ClipboardPreviousText>) 
   // TODO: move to mod
   // image can get to clipboard in many ways, so we use interval-based checker
   thread::spawn(move || {
-    let mut i = 1;
     let mut prevImage: Option<ImageData> = None;
 
     loop {
       sleep(Duration::from_millis(1000));
 
-      if !clipboard::lib::has_image() {
+      if !my_clipboard::has_image() {
         continue;
       }
 
@@ -116,15 +61,15 @@ fn enable_clipboard(app: tauri::AppHandle, state: State<ClipboardPreviousText>) 
       match prevImage {
         None => {
           prevImage = Some(image_data.clone());
-          save_clipboard(
+          my_clipboard::save_contents(
             ClipboardContent::Image(image_data),
             &app_clone_img
           );
         },
         Some(ref i) => {
-          if !image_eq(&prevImage.clone().unwrap(), &image_data) {
+          if !my_clipboard::image::eq(&prevImage.clone().unwrap(), &image_data) {
             prevImage = Some(image_data.clone());
-            save_clipboard(
+            my_clipboard::save_contents(
               ClipboardContent::Image(image_data),
               &app_clone_img
             );
@@ -134,7 +79,6 @@ fn enable_clipboard(app: tauri::AppHandle, state: State<ClipboardPreviousText>) 
 
     }
   });
-
 
   // TODO: move to mod
   // TODO: test/fix bind on linux/mac
@@ -148,18 +92,25 @@ fn enable_clipboard(app: tauri::AppHandle, state: State<ClipboardPreviousText>) 
       // here we have just recently clipboard data
       let mut clipboard = Clipboard::new().unwrap();
 
-      // TODO: this will trigger error if user copies image
-      println!("Clipboard text: {}", clipboard.get_text().unwrap());
 
-      let mut stateText = stateClone.lock().unwrap();
-      if *stateText == clipboard.get_text().unwrap() {
-        println!("Ignore: is dupe");
-      } else {
-        *stateText = clipboard.get_text().unwrap().to_string();
-        save_clipboard(
-          ClipboardContent::Text(clipboard.get_text().unwrap().to_string()),
-          &app_clone
-        );
+      // TODO: this will trigger error if user copies image
+      match clipboard.get_text() {
+        Ok(text) => {
+          let mut stateText = stateClone.lock().unwrap();
+          if *stateText == clipboard.get_text().unwrap() {
+            println!("Ignore: is dupe");
+          } else {
+            *stateText = clipboard.get_text().unwrap().to_string();
+            my_clipboard::save_contents(
+              ClipboardContent::Text(clipboard.get_text().unwrap().to_string()),
+              &app_clone
+            );
+          }
+        },
+        Err(_) => {
+          // get image
+          println!("TODO: COPY IMAGE")
+        },
       }
     }
   });

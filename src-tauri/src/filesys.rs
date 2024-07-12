@@ -1,6 +1,10 @@
 use std::fs;
 use tauri::Manager;
-use crate::Payload;
+
+#[derive(Clone, serde::Serialize)]
+pub struct Payload {
+    pub message: String,
+}
 
 pub fn remove_extra_files(folder: String, max_files_count: i32, app: &tauri::AppHandle) {
     let path = app
