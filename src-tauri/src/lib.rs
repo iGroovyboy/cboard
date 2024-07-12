@@ -1,13 +1,10 @@
+use std::sync::{Arc, Mutex, OnceLock};
+
+use arboard::{Clipboard, ImageData};
+use tauri::{AppHandle, Manager};
+
 mod helpers;
 mod filesys;
-
-use std::fs;
-use std::path::PathBuf;
-use std::sync::{Arc, Mutex, OnceLock};
-use arboard::{Clipboard, ImageData};
-use image::{ImageBuffer, Rgba};
-use tauri::Manager;
-use crate::filesys::Payload;
 
 // TODO: read from user settings
 pub static MAX_CLIPBOARD_ITEMS: i32 = 150;
@@ -24,7 +21,12 @@ impl FileTypes {
     pub const PNG: &'static str = "png";
 }
 
-// holds global clipboard instance
+pub static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
+
+pub fn get_tauri_handle() -> &'static AppHandle {
+    APP_HANDLE.get().expect("AppHandle is not set")
+}
+
 pub static CLIPBOARD: OnceLock<Arc<Mutex<Clipboard>>> = OnceLock::new();
 
 pub static PREV_IMAGE: OnceLock<Arc<Mutex<Option<ImageData>>>> = OnceLock::new();
@@ -32,9 +34,11 @@ pub static PREV_IMAGE: OnceLock<Arc<Mutex<Option<ImageData>>>> = OnceLock::new()
 pub mod my_clipboard {
     use std::fs;
     use std::sync::{Arc, Mutex};
+
     use arboard::Clipboard;
     use tauri::Manager;
-    use crate::{CLIPBOARD, ClipboardContent, filesys, helpers, MAX_CLIPBOARD_ITEMS};
+
+    use crate::{CLIPBOARD, ClipboardContent, filesys, get_tauri_handle, helpers, MAX_CLIPBOARD_ITEMS};
     use crate::filesys::Payload;
 
     pub fn get_instance() -> Arc<Mutex<Clipboard>> {
@@ -61,9 +65,9 @@ pub mod my_clipboard {
         }
     }
 
-    pub fn save_contents(contents: ClipboardContent, app: &tauri::AppHandle)
-    {
+    pub fn save_contents(contents: ClipboardContent) {
         let default_folder = "clipboard".to_string();
+        let app = get_tauri_handle().clone();
 
         let app_dir = app
             .path_resolver()
@@ -84,7 +88,7 @@ pub mod my_clipboard {
                 let f = p.join([helpers::get_timestamp(), ".txt".to_string()].concat());
                 //fs::write(f, &contents).expect("Unable to write file");
                 text::save(&f, &data);
-            },
+            }
             ClipboardContent::Image(data) => {
                 let f = p.join([helpers::get_timestamp(), ".png".to_string()].concat());
                 image::save(&f, &data);
@@ -99,6 +103,7 @@ pub mod my_clipboard {
     pub mod text {
         use std::fs;
         use std::path::PathBuf;
+
         use crate::my_clipboard::get_instance;
 
         pub fn get() -> Result<String, String> {
@@ -116,6 +121,8 @@ pub mod my_clipboard {
         pub fn save(path: &PathBuf, contents: &String) {
             fs::write(path, contents).expect("Unable to write file");
         }
+
+        pub fn on_copy() {}
         // fn read_from_clipboard() -> Result<String, String> {
         //     let clipboard = Self::get_clipboard();
         //     let mut clipboard = clipboard.lock().map_err(|e| e.to_string())?;
@@ -142,9 +149,11 @@ pub mod my_clipboard {
     pub mod image {
         use std::path::PathBuf;
         use std::sync::{Arc, Mutex};
+
         use arboard::ImageData;
         use image::{ImageBuffer, Rgba};
-        use crate::{my_clipboard, PREV_IMAGE};
+
+        use crate::{ClipboardContent, my_clipboard, PREV_IMAGE};
 
         pub fn get_previous() -> Arc<Mutex<Option<ImageData<'static>>>> {
             PREV_IMAGE.get_or_init(|| {
@@ -154,11 +163,11 @@ pub mod my_clipboard {
 
         pub fn get_prev_image_data() -> Result<Option<ImageData<'static>>, String> {
             let prev_image = get_previous();
-            let prev_image = prev_image.lock().map_err(|e| e.to_string())?;
+            let prev_image = prev_image.lock().unwrap();
             Ok(prev_image.clone())
         }
 
-        pub fn init_prev_image(image_data: ImageData<'static>) -> Result<(), String> {
+        pub fn init_prev_image() -> Result<(), String> {
             let prev_image = get_previous();
             let mut prev_image = prev_image.lock().map_err(|e| e.to_string())?;
             *prev_image = None;
@@ -182,7 +191,7 @@ pub mod my_clipboard {
             let buffer: ImageBuffer<Rgba<u8>, _> = ImageBuffer::from_raw(
                 image_data.width as u32,
                 image_data.height as u32,
-                &image_data.bytes[..]
+                &image_data.bytes[..],
             ).ok_or("Failed to create image buffer")?;
 
             buffer.save_with_format(path.as_path(), image::ImageFormat::Png).unwrap();
@@ -200,35 +209,29 @@ pub mod my_clipboard {
         //     Ok(())
         // }
 
-
-        pub fn on_copy(previous_image: Option<ImageData>) {
+        pub fn on_copy() {
             let clipboard = my_clipboard::get_instance();
-
             let mut clipboard_lock = clipboard.lock().unwrap();
             let image_data = clipboard_lock.get_image().unwrap();
 
-            // match previous_image {
-            //     None => {
-            //         previous_image = Some(image_data.clone());
-            //         save_clipboard(
-            //             ClipboardContent::Image(image_data),
-            //             &app_clone_img
-            //         );
-            //     },
-            //     Some(ref i) => {
-            //         if !image_eq(&previous_image.clone().unwrap(), &image_data) {
-            //             previous_image = Some(image_data.clone());
-            //             save_clipboard(
-            //                 ClipboardContent::Image(image_data),
-            //                 &app_clone_img
-            //             );
-            //         }
-            //     },
-            // }
+            let mut previous_image = get_prev_image_data().unwrap();
+
+            match previous_image {
+                None => {
+                    set_prev_image(image_data.clone()).expect("set_prev_image error");
+                    my_clipboard::save_contents(ClipboardContent::Image(image_data));
+                }
+                Some(ref i) => {
+                    if !eq(&i, &image_data) {
+                        set_prev_image(image_data.clone()).expect("set_prev_image error");
+                        ;
+                        my_clipboard::save_contents(ClipboardContent::Image(image_data));
+                    }
+                }
+            }
 
             ()
         }
-
     }
 }
 
