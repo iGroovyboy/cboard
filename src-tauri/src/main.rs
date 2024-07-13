@@ -124,6 +124,14 @@ fn main() {
             let handle = app.handle().clone();
             APP_HANDLE.set(handle).unwrap_or_else(|_| panic!("AppHandle is already set"));
 
+            // let main_window = app.get_window("main").unwrap();
+            // main_window.on_window_event(|event| match event {
+            //     WindowEvent::Focused(false) => {
+            //         hide_window();
+            //     }
+            //     _ => {}
+            // });
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![

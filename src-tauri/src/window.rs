@@ -1,7 +1,10 @@
-use tauri::{AppHandle, Manager};
+use tauri::Manager;
+
+use app::get_tauri_handle;
 
 #[tauri::command]
-pub fn hide_window(app: AppHandle) {
+pub fn hide_window() {
+    let app = get_tauri_handle().clone();
     let window = app.get_window("main").unwrap();
     let menu_item = app.tray_handle().get_item("toggle");
     window.hide().unwrap();
@@ -9,7 +12,8 @@ pub fn hide_window(app: AppHandle) {
 }
 
 #[tauri::command]
-pub fn show_window(app: AppHandle) {
+pub fn show_window() {
+    let app = get_tauri_handle().clone();
     let window = app.get_window("main").unwrap();
     let menu_item = app.tray_handle().get_item("toggle");
     window.show().unwrap();

@@ -1,5 +1,5 @@
 <template>
-    <div v-if="type" class="menu-wrapper absolute top-0 w-full h-full z-100">
+    <div v-if="type" class="menu-wrapper absolute top-0 w-full h-full z-100" @click="$emit('close')">
         <ul v-if="type === MENU_TYPE.Context" class="menu">
             <li @click="action(ACTION.DeleteAll)">Delete all</li>
         </ul>
@@ -27,7 +27,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(['click']);
+const emit = defineEmits(['click', 'close']);
 
 const enum ACTION {
     None,
@@ -56,7 +56,7 @@ const action = (action: ACTION) => {
 
 <style scoped lang="scss">
 .menu {
-    @apply absolute rounded-lg border border-neutral-500/30 w-[50%] text-[12px] py-2 backdrop-blur shadow-md;
+    @apply absolute border border-neutral-500/30 w-[50%] text-[12px] py-2 backdrop-blur shadow-md bg-white/5;
 
     &.main {
         @apply top-8 left-auto right-2

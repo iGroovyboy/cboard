@@ -1,4 +1,6 @@
 <template>
+  <app-titlebar />
+
   <app-tabs :active-tab-id="activeTabId" :clip-len="data?.[Folder.Clipboard]?.children?.length"
     :fav-len="data?.[Folder.Favorites]?.children?.length" @switch-tab="switchTab" @mainmenu="menuType = MENU_TYPE.Main"
     @contextmenu="contextMenu" />
@@ -25,7 +27,8 @@
     </ul>
   </main>
 
-  <app-popup :type="menuType" :currentFolder="contextMenuFolder" @click="menuType = MENU_TYPE.None" />
+  <app-popup ref="popup" :type="menuType" :currentFolder="contextMenuFolder" @click="menuType = MENU_TYPE.None"
+    @close="menuType = MENU_TYPE.None" />
 </template>
 
 <script setup lang="ts">
@@ -38,6 +41,7 @@ import { FILE_EXT, Folder, FOLDER_NAME, MENU_TYPE } from './common/constants';
 import { ClipboardData } from './common/interfaces';
 import { getFilesData } from './services/backend';
 import { formatDate } from './common/helpers';
+import AppTitlebar from './components/AppTitlebar.vue';
 import AppPopup from './components/AppPopup.vue';
 import AppTabs from './components/AppTabs.vue';
 
@@ -93,10 +97,8 @@ const deleteItem = (item: ClipboardItem) => {
   });
 }
 
-
-onBeforeMount(async () => {
-  // document.addEventListener('contextmenu', event => event.preventDefault());
-  console.log('START');
+const bootUp = async () => {
+  document.addEventListener('contextmenu', event => event.preventDefault());
 
   await listen('clipboard', async (event: any) => {
     const unlisten = console.log("EVENT", event);
@@ -115,8 +117,9 @@ onBeforeMount(async () => {
   invoke('enable_clipboard');
 
   await fetchData();
-})
+}
 
+bootUp();
 </script>
 
 <style lang="scss" scoped>

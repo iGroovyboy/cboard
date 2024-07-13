@@ -79,7 +79,8 @@
         "height": 510,
         "resizable": true,
         "title": "cboard",
-        "width": 400
+        "width": 400,
+        "decorations": false
       }
     ],
     "systemTray": {
