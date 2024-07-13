@@ -7,6 +7,7 @@ pub struct Payload {
     pub message: String,
 }
 
+#[allow(dead_code)]
 pub fn remove_extra_files(folder: String, max_files_count: i32, app: &tauri::AppHandle) {
     let path = app
         .path_resolver()
@@ -16,26 +17,27 @@ pub fn remove_extra_files(folder: String, max_files_count: i32, app: &tauri::App
         .join("data")
         .join(folder);
 
-    let filesCount = (fs::read_dir(&path).unwrap().count() as i32) + 1;
-    println!("Count: {}", &filesCount);
+    let files_count = (fs::read_dir(&path).unwrap().count() as i32) + 1;
+    println!("Count: {}", &files_count);
 
     let mut files = fs::read_dir(&path).unwrap();
-    if filesCount > max_files_count {
-        let mut leftToRemove = filesCount - max_files_count;
+    if files_count > max_files_count {
+        let mut left_to_remove = files_count - max_files_count;
 
         while let Some(file) = files.next() {
-            if leftToRemove < 1 {
+            if left_to_remove < 1 {
                 break;
             }
-            leftToRemove -= 1;
+            left_to_remove -= 1;
 
             fs::remove_file(file.unwrap().path()).unwrap();
         }
     }
 }
 
+#[allow(dead_code)]
 #[tauri::command]
-pub fn deleteAllByFolder(folder: String, app: tauri::AppHandle) {
+pub fn delete_all_by_folder(folder: String, app: tauri::AppHandle) {
     let path = app
         .path_resolver()
         .app_local_data_dir()
@@ -50,6 +52,7 @@ pub fn deleteAllByFolder(folder: String, app: tauri::AppHandle) {
     app.emit_all("clipboard", Payload { message: "remove_clipboard_items".to_string() }).unwrap();
 }
 
+#[allow(dead_code)]
 #[tauri::command]
 pub fn remove_clipboard_item(filename: String, folder: String, app: tauri::AppHandle) { // TODO: use ClipboardItem
     let file = app
@@ -61,12 +64,12 @@ pub fn remove_clipboard_item(filename: String, folder: String, app: tauri::AppHa
         .join(folder)
         .join(filename);
 
-    fs::remove_file(&file);
+    fs::remove_file(&file).unwrap();
     println!("removed file {:?}", file);
     app.emit_all("clipboard", Payload { message: "remove_clipboard_item".to_string() }).unwrap();
 }
 
-
+#[allow(dead_code)]
 #[tauri::command]
 pub fn move_clipboard_item(from: String, filename: String, folder: String, app: tauri::AppHandle) {
     let to = app
@@ -78,7 +81,7 @@ pub fn move_clipboard_item(from: String, filename: String, folder: String, app: 
         .join(folder)
         .join(&filename);
 
-    fs::rename(from, &to);
+    fs::rename(from, &to).unwrap();
     println!("moved file {} to {:?}", &filename, to);
     app.emit_all("clipboard", Payload { message: "move_clipboard_item".to_string() }).unwrap();
 }

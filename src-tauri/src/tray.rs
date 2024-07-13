@@ -20,7 +20,7 @@ pub fn handle_tray_events(app: &AppHandle, event: SystemTrayEvent) {
 
             if !window.is_visible().unwrap() {
                 window.show().unwrap();
-                hide_item_handle.set_title("Hide");
+                hide_item_handle.set_title("Hide").unwrap();
             }
         }
         SystemTrayEvent::RightClick {
@@ -33,7 +33,6 @@ pub fn handle_tray_events(app: &AppHandle, event: SystemTrayEvent) {
         SystemTrayEvent::MenuItemClick { id, .. } => {
             match id.as_str() {
                 "quit" => {
-                    println!("bb");
                     std::process::exit(0);
                 }
                 "toggle" => {
@@ -42,10 +41,10 @@ pub fn handle_tray_events(app: &AppHandle, event: SystemTrayEvent) {
 
                     if window.is_visible().unwrap() {
                         window.hide().unwrap();
-                        hide_item_handle.set_title("Show");
+                        hide_item_handle.set_title("Show").unwrap();
                     } else {
                         window.show().unwrap();
-                        hide_item_handle.set_title("Hide");
+                        hide_item_handle.set_title("Hide").unwrap();
                     }
                 }
                 _ => {}

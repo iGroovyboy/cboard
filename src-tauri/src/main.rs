@@ -4,7 +4,6 @@
 )]
 
 use std::{fs, thread, thread::sleep, time::Duration};
-use std::sync::{Arc, Mutex};
 
 use arboard::Clipboard;
 use inputbot::KeybdKey::*;
@@ -17,10 +16,9 @@ mod helpers;
 mod filesys;
 mod window;
 
-struct ClipboardPreviousText {
-    text: Arc<Mutex<String>>,
-}
+pub static IMG_THREAD_INTERVAL: u64 = 1000;
 
+#[allow(dead_code)]
 #[derive(Debug, serde::Deserialize)]
 struct ClipboardItem {
     name: String,
@@ -31,13 +29,13 @@ struct ClipboardItem {
 
 
 #[tauri::command]
-fn enable_clipboard() -> Result<String, String> {
+fn enable_clipboard() -> Result<(), String> {
     // image can get to clipboard in many ways, so we use interval-based checker
     thread::spawn(move || {
         my_clipboard::image::init_prev_image().unwrap();
 
         loop {
-            sleep(Duration::from_millis(1000));
+            sleep(Duration::from_millis(IMG_THREAD_INTERVAL));
 
             if !my_clipboard::has_image() {
                 continue;
@@ -61,21 +59,8 @@ fn enable_clipboard() -> Result<String, String> {
 
     inputbot::handle_input_events();
 
-    return Ok(123.to_string());
+    Ok(())
 }
-
-
-// fn send(event_type: &EventType) {
-//   let delay = Duration::from_millis(20);
-//   match simulate(event_type) {
-//       Ok(()) => (),
-//       Err(SimulateError) => {
-//           println!("We could not send {:?}", event_type);
-//       }
-//   }
-//   // Let ths OS catchup (at least MacOS)
-//   thread::sleep(delay);
-// }
 
 #[tauri::command]
 fn paste(item: ClipboardItem, app: AppHandle) {
@@ -89,8 +74,6 @@ fn paste(item: ClipboardItem, app: AppHandle) {
         .join("data")
         .join(&item.folder)
         .join(&item.name);
-
-    println!("paste -> {:#?}", from.extension().unwrap());
 
     let mut clipboard = Clipboard::new().unwrap();
 
@@ -125,7 +108,7 @@ fn paste(item: ClipboardItem, app: AppHandle) {
     LControlKey.release();
 
     sleep(Duration::from_millis(50));
-    clipboard.clear();
+    clipboard.clear().unwrap();
 }
 
 fn main() {
@@ -144,15 +127,15 @@ fn main() {
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
-      enable_clipboard, 
-      filesys::remove_clipboard_item,
-      filesys::move_clipboard_item,
-      paste,
-      filesys::deleteAllByFolder,
-      window::hide_window,
-      window::show_window,
-      window::quit,
-    ])
+            enable_clipboard,
+            filesys::remove_clipboard_item,
+            filesys::move_clipboard_item,
+            paste,
+            filesys::delete_all_by_folder,
+            window::hide_window,
+            window::show_window,
+            window::quit,
+        ])
         .system_tray(tray::make_tray())
         .on_system_tray_event(tray::handle_tray_events)
         .on_window_event(|event| match event.event() {

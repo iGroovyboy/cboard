@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, OnceLock};
 
 use arboard::{Clipboard, ImageData};
-use tauri::{AppHandle, Manager};
+use tauri::AppHandle;
 
 mod helpers;
 mod filesys;
@@ -92,7 +92,7 @@ pub mod my_clipboard {
             }
             ClipboardContent::Image(data) => {
                 let f = p.join([helpers::get_timestamp(), ".png".to_string()].concat());
-                image::save(&f, &data);
+                image::save(&f, &data).unwrap();
             }
         }
 
@@ -148,10 +148,10 @@ pub mod my_clipboard {
 
             match clipboard_lock.get_text() {
                 Ok(text) => {
-                    let mut previous_text = get_previous_text().unwrap();
+                    let previous_text = get_previous_text().unwrap();
                     match previous_text {
                         None => {
-                            set_previous_text(text.clone());
+                            set_previous_text(text.clone()).unwrap();
                             my_clipboard::save_contents(ClipboardContent::Text(text));
                         }
                         Some(prev_text) => {
@@ -246,7 +246,7 @@ pub mod my_clipboard {
             let mut clipboard_lock = clipboard.lock().unwrap();
             let image_data = clipboard_lock.get_image().unwrap();
 
-            let mut previous_image = get_prev_image_data().unwrap();
+            let previous_image = get_prev_image_data().unwrap();
 
             match previous_image {
                 None => {

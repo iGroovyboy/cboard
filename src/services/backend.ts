@@ -12,7 +12,9 @@ import { getFileTypeByFilename, truncateString } from "../common/helpers";
 const invoke = window.__TAURI__.invoke;
 
 export const folderDeleteAll = (contextMenuFolder: number) => {
-  invoke("deleteAllByFolder", { folder: FOLDER_NAME_MAP[contextMenuFolder] });
+  invoke("delete_all_by_folder", {
+    folder: FOLDER_NAME_MAP[contextMenuFolder],
+  });
 };
 
 export const quit = () => invoke("quit");
@@ -26,7 +28,7 @@ export const getFilesData = () => {
         dir: BaseDirectory.AppLocalData,
         recursive: true,
       });
-      console.log("FETCHED RAW", data);
+      console.log("finished fetching", data);
 
       if (!data || !data[Folder.Clipboard] || !data[Folder.Favorites]) {
         resolve([]);
