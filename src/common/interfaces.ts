@@ -12,3 +12,8 @@ export interface ClipboardFolder {
 }
 
 export type ClipboardData = ClipboardFolder[];
+
+export enum SETTINGS_KEY {
+  WINDOW_POS = "window_pos",
+  WINDOW_SIZE = "window_size",
+}

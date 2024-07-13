@@ -5,6 +5,11 @@
     :fav-len="data?.[Folder.Favorites]?.children?.length" @switch-tab="switchTab" @mainmenu="menuType = MENU_TYPE.Main"
     @contextmenu="contextMenu" />
 
+  <div class="search flex flex-row p-2">
+    <input type="text" placeholder="Search" class="p-1 text-xs sm:text-base w-11/12 border-sky-500">
+    <img src="./assets/search.svg" alt="" class="w-8 max-h-10 sm:w-1/12 pl-2 opacity-30 hover:opacity-100 cursor-pointer">
+  </div>
+
   <main class="ml-2 mr-1 overflow-y-scroll overflow-x-hidden pr-1">
     <ul v-if="data && data[activeTabId] && data[activeTabId].children">
       <li v-for="( item, key ) in  data[activeTabId].children " :key="key"
@@ -35,15 +40,16 @@
 import { register, unregister } from '@tauri-apps/api/globalShortcut';
 import { listen } from '@tauri-apps/api/event'
 import { FileEntry } from '@tauri-apps/api/fs';
-import { appWindow } from '@tauri-apps/api/window'
+import { appWindow, LogicalPosition, LogicalSize } from '@tauri-apps/api/window'
 import { onBeforeMount, ref } from 'vue';
 import { FILE_EXT, Folder, FOLDER_NAME, MENU_TYPE } from './common/constants';
-import { ClipboardData } from './common/interfaces';
+import { ClipboardData, SETTINGS_KEY } from './common/interfaces';
 import { getFilesData } from './services/backend';
-import { formatDate } from './common/helpers';
+import { debounce, formatDate } from './common/helpers';
 import AppTitlebar from './components/AppTitlebar.vue';
 import AppPopup from './components/AppPopup.vue';
 import AppTabs from './components/AppTabs.vue';
+import ls from './common/localStorage';
 
 const invoke = window.__TAURI__.invoke;
 
@@ -54,6 +60,9 @@ const contextMenuFolder = ref(0);
 const activeTabId = ref(Folder.Clipboard);
 
 const data = ref<null | ClipboardData | FileEntry[]>(null);
+
+let debounceTimeout: number;
+let windowPos = {};
 
 const contextMenu = (e: PointerEvent, id: number) => {
   contextMenuFolder.value = id || 0;
@@ -105,9 +114,29 @@ const bootUp = async () => {
     await fetchData();
   })
 
-  const unlisten2 = await listen('clipboard_img', (event: any) => {
+  await listen('clipboard_img', (event: any) => {
     console.log("EVENT!", [...event.message]);
   })
+
+  appWindow.onMoved(debounce(({ payload: position }) => {
+    console.log('Window moved to:', position);
+    ls.save(SETTINGS_KEY.WINDOW_POS, position);
+  }, 500));
+
+  appWindow.onResized(debounce(({ payload: size }) => {
+    console.log('Window resized:', size);
+    ls.save(SETTINGS_KEY.WINDOW_SIZE, size);
+  }, 500));
+
+  if (ls.has(SETTINGS_KEY.WINDOW_POS)) {
+    const pos = ls.get(SETTINGS_KEY.WINDOW_POS);
+    await appWindow.setPosition(new LogicalPosition(pos.x, pos.y));
+  }
+
+  if (ls.has(SETTINGS_KEY.WINDOW_SIZE)) {
+    const size = ls.get(SETTINGS_KEY.WINDOW_SIZE);
+    await appWindow.setSize(new LogicalSize(size.width, size.height));
+  }
 
   await register('CommandOrControl+1', () => {
     console.log('Shortcut triggered');

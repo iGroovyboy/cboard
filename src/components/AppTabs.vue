@@ -31,12 +31,6 @@
                 </svg>
             </li>
         </ul>
-
-        <div class="search flex flex-row p-2">
-            <input type="text" placeholder="Search" class="p-1 text-xs sm:text-base w-11/12 border-sky-500">
-            <img src="./assets/search.svg" alt=""
-                class="w-8 max-h-10 sm:w-1/12 pl-2 opacity-30 hover:opacity-100 cursor-pointer">
-        </div>
     </nav>
 </template>
 

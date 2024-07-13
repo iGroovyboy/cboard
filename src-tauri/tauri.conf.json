@@ -76,10 +76,11 @@
     "windows": [
       {
         "fullscreen": false,
-        "height": 510,
         "resizable": true,
         "title": "cboard",
+        "height": 510,
         "width": 400,
+        "visible": false,
         "decorations": false
       }
     ],

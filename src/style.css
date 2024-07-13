@@ -24,6 +24,10 @@ html {
   background-color: #242424;
 }
 
+body {
+  border: 1px solid #ccc3;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
