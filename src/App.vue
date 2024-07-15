@@ -13,7 +13,8 @@
   <main class="ml-2 mr-1 overflow-y-scroll overflow-x-hidden pr-1">
     <ul v-if="data && data[activeTabId] && data[activeTabId].children">
       <li v-for="( item, key ) in  data[activeTabId].children " :key="key"
-        class="flex pb-2 mb-2 border-b border-neutral-700">
+        class="flex pl-1 pb-2 mb-2 border border-transparent border-b border-b-neutral-700"
+        :class="{ 'border border-white/50 border-b-white/50': key === focusedElementId }">
         <div class="item w-11/12 cursor-pointer" @click="pasteItem(item)">
           <div class="value text-xs sm:text-base pb-2 mb-2 leading-5 overflow-hidden"
             :class="{ 'max-h-14': item.type === FILE_EXT.TXT }">
@@ -57,11 +58,14 @@ const menuType = ref(0);
 
 const contextMenuFolder = ref(0);
 
-const activeTabId = ref(Folder.Clipboard);
+const activeTabId = ref<number>(Folder.Clipboard);
 
 const data = ref<null | ClipboardData | FileEntry[]>(null);
 
+const focusedElementId = ref<null | number>(null);
+
 let debounceTimeout: number;
+
 let windowPos = {};
 
 const contextMenu = (e: PointerEvent, id: number) => {
@@ -84,7 +88,15 @@ const switchTab = async (tabId: number) => {
   }
 }
 
+const toggleNextTab = () => {
+  activeTabId.value = +!!!activeTabId.value;
+}
+
 const pasteItem = async (item: ClipboardItem) => {
+  if (!item) {
+    return;
+  }
+
   await appWindow.hide();
   invoke("paste", { item: item });
 }
@@ -98,6 +110,9 @@ const moveItemToFolder = (item: ClipboardItem) => {
 }
 
 const deleteItem = (item: ClipboardItem) => {
+  if (!item) {
+    return;
+  }
   console.log(`REMOVE: ${item.folder}/${item.name}`);
 
   invoke("remove_clipboard_item", {
@@ -105,6 +120,45 @@ const deleteItem = (item: ClipboardItem) => {
     folder: item.folder,
   });
 }
+
+const keysBoot = () => {
+  document.addEventListener('keydown', event => {
+    switch (event.key) {
+      case "ArrowDown":
+        if (data.value[activeTabId.value]?.children?.length - 1 === focusedElementId.value) {
+          break;
+        }
+        focusedElementId.value += 1;
+        console.log(focusedElementId.value);
+        break;
+      case "ArrowUp":
+        if (focusedElementId.value === 0) {
+          break;
+        }
+        focusedElementId.value -= 1;
+        console.log(focusedElementId.value);
+        break;
+      case " " || "Enter":
+        if (focusedElementId.value !== null) {
+          pasteItem(data.value[activeTabId.value]?.children?.[+focusedElementId.value]);
+        }
+        break;
+      case "Delete":
+        if (focusedElementId.value !== null) {
+          deleteItem(data.value[activeTabId.value]?.children?.[+focusedElementId.value]);
+        }
+        break;
+      case "Tab":
+        event.preventDefault();
+        toggleNextTab();
+        break;
+      default:
+        break;
+    }
+
+  });
+}
+
 
 const bootUp = async () => {
   document.addEventListener('contextmenu', event => event.preventDefault());
@@ -138,10 +192,15 @@ const bootUp = async () => {
     await appWindow.setSize(new LogicalSize(size.width, size.height));
   }
 
+  keysBoot();
+
+  // TODO: make customizable
   await register('CommandOrControl+1', () => {
     console.log('Shortcut triggered');
     invoke("show_window");
   });
+
+  await appWindow.setAlwaysOnTop(true);
 
   invoke('enable_clipboard');
 
