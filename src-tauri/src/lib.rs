@@ -40,8 +40,8 @@ pub mod my_clipboard {
     use arboard::Clipboard;
     use tauri::Manager;
 
-    use crate::{CLIPBOARD, ClipboardContent, filesys, get_tauri_handle, helpers, MAX_CLIPBOARD_ITEMS};
-    use crate::filesys::Payload;
+    use crate::{CLIPBOARD, ClipboardContent, get_tauri_handle, helpers, MAX_CLIPBOARD_ITEMS};
+    use crate::filesys;
 
     pub fn get_instance() -> Arc<Mutex<Clipboard>> {
         CLIPBOARD.get_or_init(|| {
@@ -98,7 +98,7 @@ pub mod my_clipboard {
 
         filesys::remove_extra_files(default_folder, MAX_CLIPBOARD_ITEMS, &app);
 
-        app.emit_all("clipboard", Payload { message: String::from("contents") }).unwrap();
+        app.emit_all("clipboard", filesys::Payload { message: String::from("contents") }).unwrap();
     }
 
     pub mod text {

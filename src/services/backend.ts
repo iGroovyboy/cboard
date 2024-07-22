@@ -1,4 +1,9 @@
-import { readDir, BaseDirectory, readTextFile } from "@tauri-apps/api/fs";
+import {
+  readDir,
+  BaseDirectory,
+  readTextFile,
+  FileEntry,
+} from "@tauri-apps/api/fs";
 import {
   DIR_DATA,
   FILE_EXT,
@@ -19,7 +24,7 @@ export const folderDeleteAll = (contextMenuFolder: number) => {
 
 export const quit = () => invoke("quit");
 
-export const getFilesData = () => {
+export const getFilesData = async (): Promise<FileEntry[]> => {
   console.log("...fetching...");
 
   return new Promise(async (resolve, reject) => {

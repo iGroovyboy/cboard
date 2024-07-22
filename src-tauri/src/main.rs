@@ -11,9 +11,9 @@ use tauri::{AppHandle, Manager};
 
 use app::{APP_HANDLE, FileTypes, my_clipboard};
 
-mod tray;
-mod helpers;
 mod filesys;
+mod helpers;
+mod tray;
 mod window;
 
 pub static IMG_THREAD_INTERVAL: u64 = 1000;
@@ -27,9 +27,11 @@ struct ClipboardItem {
     contents: Option<String>,
 }
 
-
 #[tauri::command]
 fn enable_clipboard() -> Result<(), String> {
+    filesys::create_folders(&[filesys::FOLDER_CLIPBOARD, filesys::FOLDER_FAVOURITES])
+        .expect("Couldn't create required directories");
+
     // image can get to clipboard in many ways, so we use interval-based checker
     thread::spawn(move || {
         my_clipboard::image::init_prev_image().unwrap();
@@ -122,7 +124,9 @@ fn main() {
             }
 
             let handle = app.handle().clone();
-            APP_HANDLE.set(handle).unwrap_or_else(|_| panic!("AppHandle is already set"));
+            APP_HANDLE
+                .set(handle)
+                .unwrap_or_else(|_| panic!("AppHandle is already set"));
 
             Ok(())
         })
