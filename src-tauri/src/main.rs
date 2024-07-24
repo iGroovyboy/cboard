@@ -13,6 +13,8 @@ use app::{APP_HANDLE, FileTypes, my_clipboard};
 
 mod filesys;
 mod helpers;
+mod input_lang;
+mod keys;
 mod tray;
 mod window;
 
@@ -127,6 +129,8 @@ fn main() {
             APP_HANDLE
                 .set(handle)
                 .unwrap_or_else(|_| panic!("AppHandle is already set"));
+
+            keys::enable_key_listener();
 
             Ok(())
         })

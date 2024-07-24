@@ -3,7 +3,9 @@ use std::fs;
 use tauri::Manager;
 use crate::APP_HANDLE;
 
+#[allow(dead_code)]
 pub const FOLDER_CLIPBOARD: &str = "clipboard";
+#[allow(dead_code)]
 pub const FOLDER_FAVOURITES: &str = "favorites";
 
 #[derive(Clone, serde::Serialize)]

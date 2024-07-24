@@ -21,7 +21,10 @@ tauri = { version = "1.5", features = [ "protocol-asset", "dialog-all", "fs-exis
 inputbot = { git = "https://github.com/obv-mikhail/InputBot", branch = "develop" }
 arboard = "3.2.0"
 image = "0.25.1"
-# enigo = { path = "./enigo", version = "0.0.14" }
+sys-locale = "0.3.1"
+winapi = { version = "0.3", features = ["winuser", "winnt", "winnls"] }
+rdev = { version = "0.5.3", features = ["serialize"] }
+enigo = { version = "0.2.1" }
 
 [features]
 # by default Tauri runs in production mode
