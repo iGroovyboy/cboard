@@ -12,3 +12,7 @@ pub fn get_timestamp() -> String {
 pub fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>());
 }
+
+pub fn is_alphabetic_or_space(s: &str) -> bool {
+    s.chars().all(|c| c.is_alphabetic() || c.is_whitespace())
+}

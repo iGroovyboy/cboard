@@ -3,7 +3,8 @@ use std::sync::{Arc, Mutex, OnceLock};
 use std::{thread, time};
 use enigo::{Enigo, Settings, Key as outKey, Keyboard};
 use enigo::Direction::{Press, Release};
-use rdev::{Event, EventType, Key as inKey, listen};
+use rdev::{Event, EventType, Key as inKey, listen, Keyboard as rdevKeyboard, KeyboardState};
+use crate::helpers::{is_alphabetic_or_space, print_type_of};
 use crate::input_lang::get_current_keyboard_layout;
 
 #[derive(Debug)]
@@ -81,10 +82,16 @@ fn handle_event(event: Event) {
         return;
     }
 
-    if let EventType::KeyPress(key) = event.event_type {
-        save_auto_replacement_log(&key, event);
+    if let EventType::KeyRelease(key) = event.event_type {
+        // TODO: mb fix this hack to get name for KeyRelease, bc rdev listen doesn't save name for KeyRelease
+        // rdev-0.5.3/src/windows/listen.rs:24
+        let mut keyboard = rdevKeyboard::new().unwrap();
+        let name = keyboard.add(&EventType::KeyPress(key));
 
-        println!("lol? {:#?}", key);
+        save_auto_replacement_log(&key, Event {
+            name,
+            ..event
+        });
     }
 }
 
@@ -101,7 +108,7 @@ fn save_auto_replacement_log(key: &inKey, event: Event) {
         return;
     }
 
-    if contains_escape_string(event.name.clone().unwrap()) {
+    if !is_valid_key_name(&event.name.clone().unwrap()) {
         return;
     }
 
@@ -115,7 +122,11 @@ fn save_auto_replacement_log(key: &inKey, event: Event) {
     println!("====BUF> {:#?}", get_auto_repl_buffer_string());
     handle_auto_replacement();
 
-    println!("LOG {:#?}", KEY_LOG_AUTO_REPLACEMENT.get().unwrap().lock().unwrap());
+    // println!("LOG {:#?}", KEY_LOG_AUTO_REPLACEMENT.get().unwrap().lock().unwrap());
+}
+
+fn is_valid_key_name(name: &String) -> bool {
+    !contains_escape_string(name) || is_alphabetic_or_space(name)
 }
 
 /// Handles the automatic replacement of text in the buffer.
@@ -168,7 +179,7 @@ fn get_auto_repl_buffer_string() -> Option<String> {
     )
 }
 
-fn contains_escape_string(s: String) -> bool {
+fn contains_escape_string(s: &String) -> bool {
     s.chars().any(|c| c.is_ascii_control())
 }
 
