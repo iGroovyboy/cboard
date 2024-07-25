@@ -1,14 +1,16 @@
 import {
-  readDir,
   BaseDirectory,
-  readTextFile,
+  exists,
   FileEntry,
+  readDir,
+  readTextFile,
+  writeTextFile,
 } from "@tauri-apps/api/fs";
 import {
   DIR_DATA,
   FILE_EXT,
-  FOLDER_NAME_MAP,
   Folder,
+  FOLDER_NAME_MAP,
 } from "../common/constants";
 import { ClipboardFolder } from "../common/interfaces";
 import { convertFileSrc } from "@tauri-apps/api/tauri";
@@ -23,6 +25,38 @@ export const folderDeleteAll = (contextMenuFolder: number) => {
 };
 
 export const quit = () => invoke("quit");
+
+export const getFile = async (filename: string) => {
+  const dir = BaseDirectory.AppLocalData;
+  let path = DIR_DATA + "/" + filename;
+
+  if (await exists(path, { dir: dir })) {
+    try {
+      return await readTextFile(path, { dir: dir });
+    } catch (e) {
+      console.error(e);
+    }
+  } else {
+    try {
+      await writeTextFile(path, "", { dir: dir });
+      return "";
+    } catch (e) {
+      console.error(e);
+    }
+  }
+};
+
+export const saveTextFile = async (filename: string, contents: string) => {
+  const dir = BaseDirectory.AppLocalData;
+  let path = DIR_DATA + "/" + filename;
+
+  try {
+    await writeTextFile(path, contents, { dir: dir });
+    return true;
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 export const getFilesData = async (): Promise<FileEntry[]> => {
   console.log("...fetching...");
@@ -41,7 +75,7 @@ export const getFilesData = async (): Promise<FileEntry[]> => {
 
       for (const [f, folder] of Object.entries(data)) {
         for (const [c, file] of Object.entries(
-          (folder as ClipboardFolder).children
+          (folder as ClipboardFolder).children,
         )) {
           data[f].children[c].folder = folder.name;
 

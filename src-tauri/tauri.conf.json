@@ -18,6 +18,7 @@
         "readDir": true,
         "readFile": true,
         "exists": true,
+        "writeFile": true,
         "scope": ["**"]
       },
       "globalShortcut": {

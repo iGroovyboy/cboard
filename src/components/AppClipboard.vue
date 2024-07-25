@@ -52,10 +52,16 @@
           </div>
         </div>
         <div class="controls flex items-center">
-          <button @click="bookmarkItem(item)">
+          <button
+            class="p-1 w-6 ml-1 opacity-50 hover:opacity-100"
+            @click="bookmarkItem(item)"
+          >
             <img src="../assets/star.svg" alt="Bookmark" />
           </button>
-          <button @click="deleteItem(item)">
+          <button
+            class="p-1 w-6 ml-1 opacity-50 hover:opacity-100"
+            @click="deleteItem(item)"
+          >
             <img src="../assets/trash.svg" alt="Delete" />
           </button>
         </div>

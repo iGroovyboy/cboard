@@ -17,3 +17,8 @@ export enum SETTINGS_KEY {
   WINDOW_POS = "window_pos",
   WINDOW_SIZE = "window_size",
 }
+
+export interface AutoReplacementItem {
+  key: string;
+  value: string;
+}

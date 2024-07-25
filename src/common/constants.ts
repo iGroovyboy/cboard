@@ -3,6 +3,10 @@ export enum Folder {
   Favorites = 1,
 }
 
+export const FILE_NAME = {
+  Autoreplace: "autoreplace.json",
+};
+
 export const FOLDER_NAME = {
   Clipboard: "clipboard",
   Favorites: "favorites",

@@ -70,16 +70,4 @@ bootUp();
 main {
   height: calc(100vh - 90px);
 }
-
-button {
-  padding: 3px;
-  width: 25px;
-  height: 25px;
-  margin-left: 5px;
-  opacity: 0.5;
-
-  &:hover {
-    opacity: 1;
-  }
-}
 </style>
