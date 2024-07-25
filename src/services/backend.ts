@@ -63,7 +63,7 @@ export const getFilesData = async (): Promise<FileEntry[]> => {
 
   return new Promise(async (resolve, reject) => {
     try {
-      const data = await readDir(DIR_DATA, {
+      let data = await readDir(DIR_DATA, {
         dir: BaseDirectory.AppLocalData,
         recursive: true,
       });
@@ -72,6 +72,9 @@ export const getFilesData = async (): Promise<FileEntry[]> => {
       if (!data || !data[Folder.Clipboard] || !data[Folder.Favorites]) {
         resolve([]);
       }
+
+      // keep only folders
+      data = data.filter((f) => "children" in f);
 
       for (const [f, folder] of Object.entries(data)) {
         for (const [c, file] of Object.entries(
