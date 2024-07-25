@@ -1,9 +1,15 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
-use std::{thread, time};
+use std::{fs, thread, time};
+use std::fs::File;
+use std::io::BufReader;
 use enigo::{Enigo, Settings, Key as outKey, Keyboard};
 use enigo::Direction::{Press, Release};
 use rdev::{Event, EventType, Key as inKey, listen, Keyboard as rdevKeyboard, KeyboardState};
+use serde::Deserialize;
+use tauri::Manager;
+use app::get_tauri_handle;
+use crate::filesys::{FILENAME_AUTO_REPLACEMENT, Payload};
 use crate::helpers::{is_alphabetic_or_space, print_type_of};
 use crate::input_lang::get_current_keyboard_layout;
 
@@ -24,6 +30,12 @@ impl Default for KeyLog {
             keys: Vec::new()
         }
     }
+}
+
+#[derive(Deserialize, Debug)]
+struct KeyValue {
+    key: String,
+    value: String,
 }
 
 pub type UserAutoReplMap = HashMap<String, String>;
@@ -65,10 +77,43 @@ fn initialize_key_log(log: &'static OnceLock<Arc<Mutex<KeyLog>>>) {
     log.set(Arc::new(Mutex::new(KeyLog::default()))).unwrap();
 }
 
+fn fill_auto_replacement_data(new_data: Vec<KeyValue>) {
+    let mut map = USER_AUTO_REPLACEMENT_MAP.get()
+        .expect("USER_AUTO_REPLACEMENT_MAP must have starting value").lock().unwrap();
+
+    map.clear();
+
+    for item in new_data {
+        map.insert(item.key, item.value);
+    }
+}
+
+#[allow(dead_code)]
+#[tauri::command]
+pub fn update_auto_replace_data() -> Result<(), String> {
+    let app = get_tauri_handle().clone();
+    let from = app
+        .path_resolver()
+        .app_local_data_dir()
+        .expect("Failed to resolve app local dir")
+        .as_path()
+        .join("data")
+        .join(FILENAME_AUTO_REPLACEMENT);
+
+    let file = File::open(from).unwrap();
+    let reader = BufReader::new(file);
+
+    let data: Vec<KeyValue> = serde_json::from_reader(reader).expect("Failed to parse auto replacement JSON");
+    fill_auto_replacement_data(data);
+
+    Ok(())
+}
+
 pub fn enable_key_listener() {
     initialize_auto_repl_map();
     initialize_key_log(&KEY_LOG_AUTO_REPLACEMENT);
     IS_SENDING.set(Arc::new(Mutex::new(false))).unwrap();
+    update_auto_replace_data().unwrap();
 
     thread::spawn(move || {
         listen(move |event| {
@@ -95,6 +140,7 @@ fn handle_event(event: Event) {
     }
 }
 
+// TODO: enable numeric keys
 // TODO: add check if auto_replacement enabled and has values - then ok
 fn save_auto_replacement_log(key: &inKey, event: Event) {
     let key_str = format!("{:?}", key);
@@ -137,7 +183,8 @@ fn is_valid_key_name(name: &String) -> bool {
 fn handle_auto_replacement() {
     match get_auto_repl_buffer_string() {
         Some(buf) => {
-            let user_auto_repl_map = USER_AUTO_REPLACEMENT_MAP.get().expect("USER_AUTO_REPLACEMENT_MAP must have starting value").lock().unwrap();
+            let user_auto_repl_map = USER_AUTO_REPLACEMENT_MAP.get()
+                .expect("USER_AUTO_REPLACEMENT_MAP must have starting value").lock().unwrap();
             if !user_auto_repl_map.keys().any(|k| buf.contains(k)) {
                 return;
             }

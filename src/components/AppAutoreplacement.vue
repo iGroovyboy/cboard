@@ -22,10 +22,14 @@ import AppReplRow from "./AppReplRow.vue";
 import { getFile, saveTextFile } from "../services/backend";
 import { FILE_NAME } from "../common/constants";
 
+const invoke = window.__TAURI__.invoke;
+
 const data = ref<AutoReplacementItem[]>([]);
 
 const save = async () => {
-  await saveTextFile(FILE_NAME.Autoreplace, JSON.stringify(data.value));
+  if (await saveTextFile(FILE_NAME.Autoreplace, JSON.stringify(data.value))) {
+    invoke("update_auto_replace_data");
+  }
 };
 
 const add = async (item: AutoReplacementItem) => {

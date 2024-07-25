@@ -1,5 +1,4 @@
 use std::fs;
-
 use tauri::Manager;
 use crate::APP_HANDLE;
 
@@ -7,6 +6,8 @@ use crate::APP_HANDLE;
 pub const FOLDER_CLIPBOARD: &str = "clipboard";
 #[allow(dead_code)]
 pub const FOLDER_FAVOURITES: &str = "favorites";
+#[allow(dead_code)]
+pub const FILENAME_AUTO_REPLACEMENT: &str = "autoreplace.json";
 
 #[derive(Clone, serde::Serialize)]
 pub struct Payload {

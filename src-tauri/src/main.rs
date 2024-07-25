@@ -143,6 +143,7 @@ fn main() {
             window::hide_window,
             window::show_window,
             window::quit,
+            keys::update_auto_replace_data,
         ])
         .system_tray(tray::make_tray())
         .on_system_tray_event(tray::handle_tray_events)
