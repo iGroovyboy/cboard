@@ -3,8 +3,7 @@
     windows_subsystem = "windows"
 )]
 
-use tauri::{AppHandle, Manager};
-use std::{fs, thread, thread::sleep, time::Duration};
+use tauri::{Manager};
 use app::helpers::APP_HANDLE;
 use app::{auto_replacement, filesys, tray, window, clipboard as my_clipboard};
 

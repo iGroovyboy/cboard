@@ -8,7 +8,7 @@ use rdev::{Event, EventType, Key as inKey, listen, Keyboard as rdevKeyboard, Key
 use enigo::{Enigo, Settings, Key as outKey, Keyboard};
 use enigo::Direction::{Press, Release};
 use crate::filesys::{FILENAME_AUTO_REPLACEMENT};
-use crate::helpers::{get_tauri_handle, is_alphabetic_or_space};
+use crate::helpers::{get_tauri_handle};
 use crate::keyboard_layouts::get_current_keyboard_layout;
 
 #[derive(Debug)]
@@ -143,12 +143,14 @@ fn handle_event(event: Event) {
 fn save_auto_replacement_log(key: &inKey, event: Event) {
     let key_str = format!("{:?}", key);
 
-    // for eng use only main letters
-    // for other langs use extra keys that may have letters
-    let extra_letters = [inKey::LeftBracket, inKey::RightBracket, inKey::SemiColon, inKey::Quote, inKey::Comma, inKey::Dot];
-    let current_keyboard_layout = get_current_keyboard_layout().unwrap_or_else(|| String::from(""));
-    let is_english = current_keyboard_layout.starts_with("en");
-    if (is_english || !extra_letters.contains(key)) && !key_str.starts_with("Key") {
+    let extra_letters = [inKey::LeftBracket, inKey::RightBracket, inKey::SemiColon,
+        inKey::Quote, inKey::Comma, inKey::Dot];
+
+    let num_row = [inKey::BackQuote, inKey::Num1, inKey::Num2, inKey::Num3,
+        inKey::Num4, inKey::Num5, inKey::Num6, inKey::Num7, inKey::Num8, inKey::Num9,
+        inKey::Num0, inKey::Minus, inKey::Equal];
+
+    if !key_str.starts_with("Key") && !extra_letters.contains(key) && !num_row.contains(key) {
         return;
     }
 
@@ -170,7 +172,9 @@ fn save_auto_replacement_log(key: &inKey, event: Event) {
 }
 
 fn is_valid_key_name(name: &String) -> bool {
-    !contains_escape_string(name) || is_alphabetic_or_space(name)
+    !contains_escape_string(name) || name.chars().all(|c|
+        c.is_alphanumeric() || c.is_ascii_punctuation() || c.is_whitespace()
+    )
 }
 
 /// Handles the automatic replacement of text in the buffer.
@@ -250,15 +254,8 @@ fn send_string(string: &str) -> Result<(), String> {
 
 fn send_key_times(key: outKey, len: i32) -> Result<(), String> {
     for _ in 0..len {
-        send_delayed_keypress(outKey::Backspace, None)?;
+        send_delayed_keypress(key, None)?;
     }
 
     Ok(())
 }
-
-fn convert_in_to_out_key(in_key: inKey) -> outKey {
-    // TODO: convert_in_to_out_key
-    outKey::Backspace
-}
-
-

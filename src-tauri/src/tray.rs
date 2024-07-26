@@ -1,9 +1,12 @@
 use tauri::{AppHandle, CustomMenuItem, Manager, SystemTray, SystemTrayEvent, SystemTrayMenu};
 
+const STR_TOGGLE: &str = "toggle";
+const STR_QUIT: &str = "quit";
+
 pub fn make_tray() -> SystemTray {
     let menu = SystemTrayMenu::new()
-        .add_item(CustomMenuItem::new("toggle".to_string(), "Hide"))
-        .add_item(CustomMenuItem::new("quit".to_string(), "Quit"));
+        .add_item(CustomMenuItem::new(STR_TOGGLE, "Hide"))
+        .add_item(CustomMenuItem::new(STR_QUIT, "Quit"));
 
     return SystemTray::new().with_menu(menu);
 }
@@ -32,10 +35,10 @@ pub fn handle_tray_events(app: &AppHandle, event: SystemTrayEvent) {
         }
         SystemTrayEvent::MenuItemClick { id, .. } => {
             match id.as_str() {
-                "quit" => {
+                STR_QUIT => {
                     std::process::exit(0);
                 }
-                "toggle" => {
+                STR_TOGGLE => {
                     let window = app.get_window("main").unwrap();
                     let hide_item_handle = app.tray_handle().get_item("toggle");
 

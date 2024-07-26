@@ -21,6 +21,6 @@ pub fn print_type_of<T>(_: &T) {
     println!("{}", std::any::type_name::<T>());
 }
 
-pub fn is_alphabetic_or_space(s: &str) -> bool {
-    s.chars().all(|c| c.is_alphabetic() || c.is_whitespace())
+pub fn is_alphanumeric_or_space(s: &str) -> bool {
+    s.chars().all(|c| c.is_alphanumeric() || c.is_whitespace())
 }
