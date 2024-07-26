@@ -1,4 +1,12 @@
+use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
+use tauri::AppHandle;
+
+pub static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
+
+pub fn get_tauri_handle() -> &'static AppHandle {
+    APP_HANDLE.get().expect("AppHandle is not set")
+}
 
 #[allow(dead_code)]
 pub fn get_timestamp() -> String {

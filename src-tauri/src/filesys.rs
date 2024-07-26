@@ -1,6 +1,6 @@
 use std::fs;
 use tauri::Manager;
-use crate::APP_HANDLE;
+use crate::helpers::get_tauri_handle;
 
 #[allow(dead_code)]
 pub const FOLDER_CLIPBOARD: &str = "clipboard";
@@ -114,8 +114,7 @@ pub fn move_clipboard_item(from: String, filename: String, folder: String, app: 
 
 #[allow(dead_code)]
 pub fn create_folders<T: AsRef<str>>(folders: &[T]) -> std::io::Result<()> {
-    // TODO: cannot import get_tauri_handle() directly - compiler can't find it in crate??????
-    let app =  APP_HANDLE.get().expect("AppHandle is not set").clone();
+    let app = get_tauri_handle().clone();
     let to = app
         .path_resolver()
         .app_local_data_dir()

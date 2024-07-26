@@ -1,17 +1,15 @@
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex, OnceLock};
-use std::{fs, thread, time};
+use std::{thread, time};
 use std::fs::File;
 use std::io::BufReader;
+use serde::Deserialize;
+use rdev::{Event, EventType, Key as inKey, listen, Keyboard as rdevKeyboard, KeyboardState};
 use enigo::{Enigo, Settings, Key as outKey, Keyboard};
 use enigo::Direction::{Press, Release};
-use rdev::{Event, EventType, Key as inKey, listen, Keyboard as rdevKeyboard, KeyboardState};
-use serde::Deserialize;
-use tauri::Manager;
-use app::get_tauri_handle;
-use crate::filesys::{FILENAME_AUTO_REPLACEMENT, Payload};
-use crate::helpers::{is_alphabetic_or_space, print_type_of};
-use crate::input_lang::get_current_keyboard_layout;
+use crate::filesys::{FILENAME_AUTO_REPLACEMENT};
+use crate::helpers::{get_tauri_handle, is_alphabetic_or_space};
+use crate::keyboard_layouts::get_current_keyboard_layout;
 
 #[derive(Debug)]
 pub struct KeyEvent {
