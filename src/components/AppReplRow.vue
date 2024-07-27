@@ -5,12 +5,14 @@
       class="bg-white/10 outline-0 w-[47%] text-emerald-500 font-bold px-2 py-1 border border-transparent focus:border-sky-500"
       maxlength="256"
       v-model="key"
+      @input="update"
     />
     <input
       type="text"
       class="bg-white/10 outline-0 w-[47%] text-white px-2 py-1 border border-transparent focus:border-sky-500"
       v-model="value"
       @keyup="handleKeyPress"
+      @input="update"
     />
     <div class="w-5 flex justify-center items-center">
       <button v-if="isConstructor" @click="add">
@@ -34,6 +36,7 @@
 <script setup lang="ts">
 import { AutoReplacementItem } from "../common/interfaces";
 import { ref } from "vue";
+import { debounce } from "../common/helpers";
 
 interface AppReplRowProps {
   data: AutoReplacementItem;
@@ -48,7 +51,7 @@ const props = withDefaults(defineProps<AppReplRowProps>(), {
   isConstructor: false,
 });
 
-const emit = defineEmits(["add", "remove"]);
+const emit = defineEmits(["add", "remove", "update"]);
 
 const key = ref(props.data.key);
 
@@ -66,4 +69,12 @@ const handleKeyPress = (e: KeyboardEvent) => {
     add();
   }
 };
+
+const update = debounce(() => {
+  emit("update", 
+    props.data.key, 
+    { key: key.value, value: value.value }
+  );
+}, 1000);
+
 </script>

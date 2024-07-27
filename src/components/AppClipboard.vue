@@ -102,8 +102,6 @@ const data = ref<null | ClipboardData | FileEntry[]>(null);
 
 const focusedElementId = ref<null | number>(null);
 
-let debounceTimeout: number;
-
 const contextMenu = (e: PointerEvent, id: number) => {
   contextMenuFolder.value = id || 0;
   menuType.value = MENU_TYPE.Context;

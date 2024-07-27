@@ -8,9 +8,15 @@
       :key="i"
       :data="row"
       @remove="remove"
+      @update="update"
     />
 
     <app-repl-row class="mt-1" isConstructor @add="add" />
+
+    <div v-if="isSaveVisible" class="flex justify-end">
+        <button @click="saveUpdated" class="w-1/2 m-2 p-1 px-4 text-sky-500 border-b border-b-sky-500">Save</button>
+        <button @click="cancelUpdated" class="w-1/2 m-2 p-1 px-4 text-amber-500 border-b border-b-amber-500">Cancel</button>
+    </div>
   </main>
 </template>
 
@@ -25,6 +31,8 @@ import { FILE_NAME } from "../common/constants";
 const invoke = window.__TAURI__.invoke;
 
 const data = ref<AutoReplacementItem[]>([]);
+
+const isSaveVisible = ref(false);
 
 const save = async () => {
   if (await saveTextFile(FILE_NAME.Autoreplace, JSON.stringify(data.value))) {
@@ -50,13 +58,31 @@ const remove = async (key: string) => {
   await save();
 };
 
-// TODO: mb add event listeners for keyboard controls
-onMounted(async () => {
+const update = (originalKey: string, item: AutoReplacementItem) => { 
+  isSaveVisible.value = true;
+
+  const id = originalKey === item.key
+    ? data.value.findIndex(i => i.key === item.key)
+    : data.value.findIndex(i => i.key === originalKey);
+
+  data.value[id] = item;
+}
+
+const saveUpdated = () => { 
+  save();
+  isSaveVisible.value = false;
+}
+
+const cancelUpdated = async () => { 
+  data.value = [];
+  await loadData();
+ }
+
+const loadData = async () => { 
   const text = await getFile(FILE_NAME.Autoreplace);
   if (text?.length) {
     try {
       data.value = JSON.parse(text);
-      console.log("data", data.value);
     } catch (e) {
       console.error(e);
     }
@@ -66,6 +92,13 @@ onMounted(async () => {
       value: "❤️",
     });
   }
+
+  isSaveVisible.value = false;
+}
+
+// TODO: mb add event listeners for keyboard controls
+onMounted(async () => {
+  loadData();
 });
 </script>
 
