@@ -2,6 +2,8 @@ export interface ClipboardItem {
   name: string; // "1672922494060.txt"
   folder: string; // "favorites"
   path: string; // "C:\\Users\\...\\AppData\\Local\\...\\data\\favorites"
+  size: number;
+  extension: string;
   contents?: string;
 }
 

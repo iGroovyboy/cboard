@@ -1,7 +1,7 @@
 <template>
   <app-titlebar />
 
-  <div class="wrapper">
+  <div class="wrapper flex flex-col h-[calc(100vh-32px)]">
     <router-view></router-view>
   </div>
 </template>

@@ -21,7 +21,7 @@
     />
   </div>
 
-  <main class="ml-2 mr-1 overflow-y-scroll overflow-x-hidden pr-1">
+  <main class="ml-2 mr-1  overflow-y-scroll overflow-x-hidden pr-1">
     <ul v-if="data && data[activeTabId] && data[activeTabId].children">
       <li
         v-for="(item, key) in data[activeTabId].children"
@@ -31,24 +31,24 @@
           'border border-white/50 border-b-white/50': key === focusedElementId,
         }"
       >
-        <div class="item w-11/12 cursor-pointer" @click="pasteItem(item)">
+        <div class="item w-11/12 overflow-hidden cursor-pointer" @click="pasteItem(item)">
           <div
             class="value text-xs sm:text-base pb-2 mb-2 leading-5 overflow-hidden"
-            :class="{ 'max-h-14': item.type === FILE_EXT.TXT }"
+            :class="{ 'max-h-14': item.extension === FILE_EXT.TXT }"
           >
-            <template v-if="item.type === FILE_EXT.TXT">{{
+            <template v-if="item.extension === FILE_EXT.TXT">{{
               item.contents
             }}</template>
-            <template v-else-if="item.type === FILE_EXT.PNG">
+            <template v-else-if="item.extension === FILE_EXT.PNG">
               <img
-                :src="item.contents"
+                :src="convertFileSrc(item.path)"
                 class="border border-white/50 hover:border-white"
                 alt="image"
               />
             </template>
           </div>
           <div class="meta text-xs text-neutral-500">
-            {{ formatDate(getTimestamp(item.name)) }}
+            {{ formatDate(getTimestamp(item.name)) }} | Size: {{ item.size }} b
           </div>
         </div>
         <div class="controls flex items-center">
@@ -89,6 +89,7 @@ import { appWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import { formatDate } from "../common/helpers";
 import AppPopup from "./AppPopup.vue";
+import { convertFileSrc } from "@tauri-apps/api/tauri";
 
 const invoke = window.__TAURI__.invoke;
 
@@ -111,7 +112,14 @@ const getTimestamp = (filename: string) =>
   filename.split(".").slice(0, -1).join(".");
 
 const fetchData = async () => {
-  data.value = await getFilesData();
+  console.log("...fetching...");
+  try {
+    const response = await invoke('read_clipboard_data');
+    data.value = JSON.parse(response)
+    console.log(data.value);
+  } catch (error) {
+    console.error(error);
+  }
 };
 
 const switchTab = async (tabId: number) => {

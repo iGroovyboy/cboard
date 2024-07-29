@@ -78,7 +78,7 @@ export const getFilesData = async (): Promise<FileEntry[]> => {
 
       for (const [f, folder] of Object.entries(data)) {
         for (const [c, file] of Object.entries(
-          (folder as ClipboardFolder).children,
+          (folder as ClipboardFolder).children
         )) {
           data[f].children[c].folder = folder.name;
 
@@ -91,7 +91,7 @@ export const getFilesData = async (): Promise<FileEntry[]> => {
           }
 
           data[f].children[c].contents = contents;
-          data[f].children[c].type = getFileTypeByFilename(file.path);
+          data[f].children[c].extension = getFileTypeByFilename(file.path);
         }
 
         data[f].children.sort((a, b) => {

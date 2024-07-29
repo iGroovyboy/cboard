@@ -1,13 +1,23 @@
-use std::fs;
+use std::{fs::{self}, io};
+use std::fs::File;
+use std::io::{BufReader, Read};
+use std::path::PathBuf;
+use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
+use serde::{Deserialize, Serialize};
 use tauri::Manager;
-use crate::helpers::get_tauri_handle;
+use crate::clipboard::FileTypes;
+use crate::helpers::{get_tauri_handle};
 
+#[allow(dead_code)]
+pub const FOLDER_DATA: &str = "data";
 #[allow(dead_code)]
 pub const FOLDER_CLIPBOARD: &str = "clipboard";
 #[allow(dead_code)]
 pub const FOLDER_FAVOURITES: &str = "favorites";
 #[allow(dead_code)]
 pub const FILENAME_AUTO_REPLACEMENT: &str = "autoreplace.json";
+
+pub const FILE_MAX_LENGTH: u8 = 255;
 
 #[derive(Clone, serde::Serialize)]
 pub struct Payload {
@@ -21,7 +31,7 @@ pub fn remove_extra_files(folder: String, max_files_count: i32, app: &tauri::App
         .app_local_data_dir()
         .expect("Failed to resolve app local dir")
         .as_path()
-        .join("data")
+        .join(FOLDER_DATA)
         .join(folder);
 
     let files_count = (fs::read_dir(&path).unwrap().count() as i32) + 1;
@@ -50,7 +60,7 @@ pub fn delete_all_by_folder(folder: String, app: tauri::AppHandle) {
         .app_local_data_dir()
         .expect("Failed to resolve app local dir")
         .as_path()
-        .join("data")
+        .join(FOLDER_DATA)
         .join(&folder);
 
     fs::remove_dir_all(&path).unwrap();
@@ -74,7 +84,7 @@ pub fn remove_clipboard_item(filename: String, folder: String, app: tauri::AppHa
         .app_local_data_dir()
         .expect("Failed to resolve app local dir")
         .as_path()
-        .join("data")
+        .join(FOLDER_DATA)
         .join(folder)
         .join(filename);
 
@@ -97,7 +107,7 @@ pub fn move_clipboard_item(from: String, filename: String, folder: String, app: 
         .app_local_data_dir()
         .expect("Failed to resolve app local dir")
         .as_path()
-        .join("data")
+        .join(FOLDER_DATA)
         .join(folder)
         .join(&filename);
 
@@ -120,7 +130,7 @@ pub fn create_folders<T: AsRef<str>>(folders: &[T]) -> std::io::Result<()> {
         .app_local_data_dir()
         .expect("Failed to resolve app local dir")
         .as_path()
-        .join("data");
+        .join(FOLDER_DATA);
 
     for folder in folders {
         let full_path = to.clone().join(folder.as_ref());
@@ -128,4 +138,119 @@ pub fn create_folders<T: AsRef<str>>(folders: &[T]) -> std::io::Result<()> {
     }
 
     Ok(())
+}
+
+trait PathBufTauri {
+    fn asset_path(self) -> String;
+}
+
+impl PathBufTauri for PathBuf {
+    fn asset_path(mut self) -> String {
+        let url = utf8_percent_encode(
+            self.to_str().unwrap(),
+            NON_ALPHANUMERIC
+        );
+
+        // \tauri\core\tauri\scripts\core.js:12
+        format!("https://asset.localhost/{}", url)
+    }
+}
+
+fn read_file_by_char_len(file_path: &PathBuf, max_len: u8) -> Result<String, io::Error> {
+    let file = File::open(file_path)?;
+    let mut reader = BufReader::with_capacity(max_len as usize, file);
+    let mut contents = String::new();
+    
+    let mut char_count: usize = 0;
+    while char_count < max_len as usize {
+        let mut single_char = [0; 1];
+        let bytes_read = reader.read(&mut single_char).unwrap_or(0);
+
+        if bytes_read == 0 {
+            break; // End of file?
+        }
+
+        if let Ok(c) = std::str::from_utf8(&single_char) {
+            contents.push_str(c);
+            char_count += c.chars().count();
+        }
+    }
+
+    Ok(contents)
+}
+
+#[derive(Debug, Serialize, Deserialize,)]
+struct StorageFile {
+    path: String,
+    name: String,
+    extension: String,
+    folder: String,
+    size: u64,
+    contents: Option<String>,
+}
+
+#[derive(Debug, Serialize, Deserialize,)]
+struct StorageFolder {
+    path: String,
+    name: String,
+    children: Vec<StorageFile>
+}
+
+#[tauri::command]
+pub async fn read_clipboard_data() -> Result<String, String> {
+    let app = get_tauri_handle().clone();
+    let dir = app
+        .path_resolver()
+        .app_local_data_dir()
+        .expect("Failed to resolve app local dir")
+        .as_path()
+        .join(FOLDER_DATA);
+
+    if !dir.is_dir() {
+        return Err("Specified path is not a dir".to_string());
+    }
+
+    let mut data: Vec<StorageFolder> = Vec::new();
+
+    let mut entries = fs::read_dir(dir).unwrap()
+        .filter(|e| e.as_ref().unwrap().path().is_dir())
+        .map(|res| res.map(|e| e.path()))
+        .collect::<Result<Vec<_>, io::Error>>().unwrap();
+
+    for subdir in entries {
+        let mut files = fs::read_dir(&subdir).unwrap()
+            .collect::<Result<Vec<_>, io::Error>>().unwrap();
+
+        let mut children = Vec::new();
+
+        for file in files {
+            let extension = file.path().extension().unwrap().to_string_lossy().to_string();
+            let contents = match extension.as_str() {
+                FileTypes::TXT => Some(read_file_by_char_len(&file.path(), FILE_MAX_LENGTH).unwrap_or("".to_string())),
+                FileTypes::PNG => Some(&file.path().asset_path()).cloned(),
+                _ => None,
+            };
+
+            let file_data = StorageFile {
+                contents: contents,
+                folder: subdir.file_name().unwrap().to_string_lossy().to_string(),
+                name: file.file_name().to_string_lossy().to_string(),
+                path: file.path().to_string_lossy().to_string(),
+                extension: extension,
+                size: file.metadata().unwrap().len(),
+            };
+
+            children.push(file_data);
+        }
+
+        children.sort_by(|a, b| a.name.cmp(&b.name));
+
+        data.push(StorageFolder {
+           path: subdir.as_path().to_string_lossy().to_string(),
+           name: subdir.file_name().unwrap().to_string_lossy().to_string(),
+           children: children,
+        });
+    }
+
+    Ok(serde_json::to_string(&data).unwrap_or("oops".to_string()))
 }

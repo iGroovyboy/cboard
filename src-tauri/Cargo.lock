@@ -67,11 +67,10 @@ dependencies = [
  "enigo",
  "image 0.25.1",
  "inputbot",
+ "percent-encoding",
  "rdev",
  "serde",
  "serde_json",
- "strum 0.26.3",
- "strum_macros 0.26.4",
  "sys-locale",
  "tauri",
  "tauri-build",
@@ -1709,8 +1708,8 @@ dependencies = [
  "libc",
  "nix 0.24.3",
  "once_cell",
- "strum 0.24.1",
- "strum_macros 0.24.3",
+ "strum",
+ "strum_macros",
  "uinput",
  "winapi",
  "x11",
@@ -2398,9 +2397,9 @@ checksum = "d01a5bd0424d00070b0098dd17ebca6f961a959dead1dbcbbbc1d1cd8d3deeba"
 
 [[package]]
 name = "percent-encoding"
-version = "2.2.0"
+version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "478c572c3d73181ff3c2539045f6eb99e5491218eae919370993b890cdbdd98e"
+checksum = "e3148f5046208a5d56bcfc03053e3ca6334e51da8dfb19b6cdc8b306fae3283e"
 
 [[package]]
 name = "pest"
@@ -3336,14 +3335,8 @@ version = "0.24.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "063e6045c0e62079840579a7e47a355ae92f60eb74daaf156fb1e84ba164e63f"
 dependencies = [
- "strum_macros 0.24.3",
+ "strum_macros",
 ]
-
-[[package]]
-name = "strum"
-version = "0.26.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8fec0f0aef304996cf250b31b5a10dee7980c85da9d759361292b8bca5a18f06"
 
 [[package]]
 name = "strum_macros"
@@ -3356,19 +3349,6 @@ dependencies = [
  "quote",
  "rustversion",
  "syn 1.0.107",
-]
-
-[[package]]
-name = "strum_macros"
-version = "0.26.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4c6bee85a5a24955dc440386795aa378cd9cf82acd5f764469152d2270e581be"
-dependencies = [
- "heck 0.5.0",
- "proc-macro2",
- "quote",
- "rustversion",
- "syn 2.0.70",
 ]
 
 [[package]]

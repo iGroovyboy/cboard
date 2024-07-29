@@ -30,6 +30,7 @@ fn main() {
             filesys::remove_clipboard_item,
             filesys::move_clipboard_item,
             filesys::delete_all_by_folder,
+            filesys::read_clipboard_data,
             window::hide_window,
             window::show_window,
             window::quit,
