@@ -1,10 +1,11 @@
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, OnceLock};
 use std::{fs, thread};
 use std::thread::sleep;
 use std::time::Duration;
 use arboard::{Clipboard, ImageData};
 use tauri::AppHandle;
 use crate::filesys;
+use parking_lot::Mutex;
 
 // TODO: read from user settings
 pub static MAX_CLIPBOARD_ITEMS: i32 = 150;
@@ -48,15 +49,15 @@ pub mod my_clipboard {
     use crate::filesys;
     use crate::helpers::get_tauri_handle;
 
-    pub fn get_instance() -> Arc<Mutex<Clipboard>> {
+    pub fn get_instance() -> Arc<parking_lot::Mutex<Clipboard>> {
         CLIPBOARD.get_or_init(|| {
-            Arc::new(Mutex::new(Clipboard::new().expect("Failed to create global clipboard instance")))
+            Arc::new(parking_lot::Mutex::new(Clipboard::new().expect("Failed to create global clipboard instance")))
         }).clone()
     }
 
     pub fn has_image() -> bool {
         let clipboard = get_instance();
-        let mut clipboard = clipboard.lock().map_err(|e| e.to_string()).unwrap();
+        let mut clipboard = clipboard.lock();
         match clipboard.get_image() {
             Ok(_) => true,
             Err(_) => false,
@@ -65,7 +66,7 @@ pub mod my_clipboard {
 
     pub fn has_text() -> bool {
         let clipboard = get_instance();
-        let mut clipboard = clipboard.lock().map_err(|e| e.to_string()).unwrap();
+        let mut clipboard = clipboard.lock();
         match clipboard.get_text() {
             Ok(_) => true,
             Err(_) => false,
@@ -114,32 +115,32 @@ pub mod my_clipboard {
         use crate::clipboard::{ClipboardContent, my_clipboard, PREV_TEXT};
         use crate::clipboard::my_clipboard::get_instance;
 
-        pub fn get_previous() -> Arc<Mutex<Option<String>>> {
-            PREV_TEXT.get_or_init(|| { Arc::new(Mutex::new(None)) }).clone()
+        pub fn get_previous() -> Arc<parking_lot::Mutex<Option<String>>> {
+            PREV_TEXT.get_or_init(|| { Arc::new(parking_lot::Mutex::new(None)) }).clone()
         }
 
         pub fn get_previous_text() -> Result<Option<String>, String> {
             let prev_text = get_previous();
-            let prev_text = prev_text.lock().map_err(|e| e.to_string())?;
+            let prev_text = prev_text.lock();
             Ok(prev_text.clone())
         }
 
         pub fn set_previous_text(text: String) -> Result<(), String> {
             let prev_text = get_previous();
-            let mut prev_text = prev_text.lock().map_err(|e| e.to_string())?;
+            let mut prev_text = prev_text.lock();
             *prev_text = Some(text);
             Ok(())
         }
 
         pub fn get() -> Result<String, String> {
             let clipboard = get_instance();
-            let mut clipboard = clipboard.lock().map_err(|e| e.to_string())?;
+            let mut clipboard = clipboard.lock();
             clipboard.get_text().map_err(|e| e.to_string())
         }
 
         pub fn set(text: String) -> Result<(), String> {
             let clipboard = get_instance();
-            let mut clipboard = clipboard.lock().expect("Couldn't lock the clipboard instance");
+            let mut clipboard = clipboard.lock();
             clipboard.set_text(text).map_err(|e| e.to_string())
         }
 
@@ -149,7 +150,7 @@ pub mod my_clipboard {
 
         pub fn on_copy() {
             let clipboard = my_clipboard::get_instance();
-            let mut clipboard_lock = clipboard.lock().unwrap();
+            let mut clipboard_lock = clipboard.lock();
 
             match clipboard_lock.get_text() {
                 Ok(text) => {
@@ -192,28 +193,28 @@ pub mod my_clipboard {
         use crate::clipboard::{ClipboardContent, my_clipboard, PREV_IMAGE};
         // use crate::{ClipboardContent, my_clipboard, PREV_IMAGE};
 
-        pub fn get_previous() -> Arc<Mutex<Option<ImageData<'static>>>> {
+        pub fn get_previous() -> Arc<parking_lot::Mutex<Option<ImageData<'static>>>> {
             PREV_IMAGE.get_or_init(|| {
-                Arc::new(Mutex::new(None))
+                Arc::new(parking_lot::Mutex::new(None))
             }).clone()
         }
 
         pub fn get_prev_image_data() -> Result<Option<ImageData<'static>>, String> {
             let prev_image = get_previous();
-            let prev_image = prev_image.lock().unwrap();
+            let prev_image = prev_image.lock();
             Ok(prev_image.clone())
         }
 
         pub fn init_prev_image() -> Result<(), String> {
             let prev_image = get_previous();
-            let mut prev_image = prev_image.lock().map_err(|e| e.to_string())?;
+            let mut prev_image = prev_image.lock();
             *prev_image = None;
             Ok(())
         }
 
         pub fn set_prev_image(image_data: ImageData<'static>) -> Result<(), String> {
             let prev_image = get_previous();
-            let mut prev_image = prev_image.lock().map_err(|e| e.to_string())?;
+            let mut prev_image = prev_image.lock();
             *prev_image = Some(image_data);
             Ok(())
         }
@@ -248,7 +249,7 @@ pub mod my_clipboard {
 
         pub fn on_copy() {
             let clipboard = my_clipboard::get_instance();
-            let mut clipboard_lock = clipboard.lock().unwrap();
+            let mut clipboard_lock = clipboard.lock();
             let image_data = clipboard_lock.get_image().unwrap();
 
             let previous_image = get_prev_image_data().unwrap();

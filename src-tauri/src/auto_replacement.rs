@@ -1,5 +1,5 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex, OnceLock};
+use std::sync::{Arc, OnceLock};
 use std::{thread, time};
 use std::fs::File;
 use std::io::BufReader;
@@ -10,6 +10,7 @@ use enigo::Direction::{Press, Release};
 use crate::filesys::{FILENAME_AUTO_REPLACEMENT};
 use crate::helpers::{get_tauri_handle};
 use crate::keyboard_layouts::get_current_keyboard_layout;
+use parking_lot::Mutex;
 
 #[derive(Debug)]
 pub struct KeyEvent {
@@ -46,7 +47,7 @@ pub static IS_SENDING: OnceLock<Arc<Mutex<bool>>> = OnceLock::new();
 /// Used to block key logging when we send keys
 fn is_sending() -> bool {
     if let Some(is_sending) = IS_SENDING.get() {
-        let is_sending = is_sending.lock().unwrap();
+        let is_sending = is_sending.lock();
         *is_sending
     } else {
         false
@@ -56,7 +57,7 @@ fn is_sending() -> bool {
 /// Used to block key logging when we send keys
 fn set_is_sending(value: bool) {
     if let Some(is_sending) = IS_SENDING.get() {
-        let mut is_sending = is_sending.lock().unwrap();
+        let mut is_sending = is_sending.lock();
         *is_sending = value;
     }
 }
@@ -77,7 +78,7 @@ fn initialize_key_log(log: &'static OnceLock<Arc<Mutex<KeyLog>>>) {
 
 fn fill_auto_replacement_data(new_data: Vec<KeyValue>) {
     let mut map = USER_AUTO_REPLACEMENT_MAP.get()
-        .expect("USER_AUTO_REPLACEMENT_MAP must have starting value").lock().unwrap();
+        .expect("USER_AUTO_REPLACEMENT_MAP must have starting value").lock();
 
     map.clear();
 
@@ -159,7 +160,6 @@ fn save_auto_replacement_log(key: &inKey, event: Event) {
     }
 
     KEY_LOG_AUTO_REPLACEMENT.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock()
-        .unwrap()
         .keys.push(KeyEvent {
             locale: get_current_keyboard_layout().unwrap_or_else(|| String::from("")),
             event,
@@ -186,7 +186,7 @@ fn handle_auto_replacement() {
     match get_auto_repl_buffer_string() {
         Some(buf) => {
             let user_auto_repl_map = USER_AUTO_REPLACEMENT_MAP.get()
-                .expect("USER_AUTO_REPLACEMENT_MAP must have starting value").lock().unwrap();
+                .expect("USER_AUTO_REPLACEMENT_MAP must have starting value").lock();
             if !user_auto_repl_map.keys().any(|k| buf.contains(k)) {
                 return;
             }
@@ -195,7 +195,7 @@ fn handle_auto_replacement() {
             let replacement = user_auto_repl_map.get(map_key).unwrap();
 
             // clear buf
-            let mut auto_repl_buf = KEY_LOG_AUTO_REPLACEMENT.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock().unwrap();
+            let mut auto_repl_buf = KEY_LOG_AUTO_REPLACEMENT.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock();
             auto_repl_buf.keys = Vec::new();
 
             set_is_sending(true);
@@ -215,7 +215,7 @@ fn handle_auto_replacement() {
 }
 
 fn get_auto_repl_buffer_string() -> Option<String> {
-    let x = KEY_LOG_AUTO_REPLACEMENT.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock().unwrap();
+    let x = KEY_LOG_AUTO_REPLACEMENT.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock();
     if x.keys.is_empty() {
         return None;
     }

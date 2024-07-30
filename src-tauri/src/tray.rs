@@ -36,7 +36,9 @@ pub fn handle_tray_events(app: &AppHandle, event: SystemTrayEvent) {
         SystemTrayEvent::MenuItemClick { id, .. } => {
             match id.as_str() {
                 STR_QUIT => {
-                    std::process::exit(0);
+                    //std::process::exit(0);
+                    let window = app.get_window("main").unwrap();
+                    window.close().unwrap();
                 }
                 STR_TOGGLE => {
                     let window = app.get_window("main").unwrap();
