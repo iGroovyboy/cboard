@@ -11,7 +11,6 @@ use crate::filesys::{FILENAME_AUTO_REPLACEMENT};
 use crate::helpers::{get_tauri_handle};
 use crate::keyboard_layouts::get_current_keyboard_layout;
 use parking_lot::Mutex;
-use rdev::Key::Unknown;
 
 #[derive(Debug)]
 pub struct KeyEvent {
@@ -38,9 +37,56 @@ struct KeyValue {
     value: String,
 }
 
+/// Holds only letters
+pub static KEY_LOG: OnceLock<Arc<Mutex<KeyLog>>> = OnceLock::new();
+
+fn initialize_key_log(log: &'static OnceLock<Arc<Mutex<KeyLog>>>) {
+    log.set(Arc::new(Mutex::new(KeyLog::default()))).unwrap();
+}
+
+fn clear_key_log() {
+    let mut auto_repl_buf = KEY_LOG.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock();
+    auto_repl_buf.keys = Vec::new();
+}
+
+fn auto_repl_buffer_string() -> Option<String> {
+    let key_log = KEY_LOG.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock();
+    if key_log.keys.is_empty() {
+        return None;
+    }
+
+    Some(
+        key_log.keys.iter()
+            .map(|e| e.event.name.clone().unwrap())
+            .collect::<Vec<String>>()
+            .join("")
+    )
+}
+
 pub type UserAutoReplMap = HashMap<String, String>;
 
 pub static USER_MAP: OnceLock<Arc<Mutex<UserAutoReplMap>>> = OnceLock::new();
+
+fn initialize_auto_repl_map() {
+    let mut map: UserAutoReplMap = HashMap::new();
+    map.insert("rrr".to_string(), "replacement for rrr ❤️ ыы!".to_string());
+
+    USER_MAP.set(Arc::new(Mutex::new(map))).unwrap();
+}
+
+fn is_user_auto_repl_map_empty() -> bool {
+    USER_MAP.get().unwrap().lock().is_empty()
+}
+
+fn set_auto_replacement_data(new_data: Vec<KeyValue>) {
+    let mut map = USER_MAP.get().unwrap().lock();
+
+    map.clear();
+
+    for item in new_data {
+        map.insert(item.key, item.value);
+    }
+}
 
 /// Used to block key logging when we send keys
 pub static IS_SENDING: OnceLock<Arc<Mutex<bool>>> = OnceLock::new();
@@ -63,30 +109,6 @@ fn set_is_sending(value: bool) {
     }
 }
 
-pub fn initialize_auto_repl_map() {
-    let mut map: UserAutoReplMap = HashMap::new();
-    map.insert("rrr".to_string(), "replacement for rrr ❤️ ыы!".to_string());
-
-    USER_MAP.set(Arc::new(Mutex::new(map))).unwrap();
-}
-
-/// Holds only letters
-pub static KEY_LOG: OnceLock<Arc<Mutex<KeyLog>>> = OnceLock::new();
-
-fn initialize_key_log(log: &'static OnceLock<Arc<Mutex<KeyLog>>>) {
-    log.set(Arc::new(Mutex::new(KeyLog::default()))).unwrap();
-}
-
-fn fill_auto_replacement_data(new_data: Vec<KeyValue>) {
-    let mut map = USER_MAP.get().unwrap().lock();
-
-    map.clear();
-
-    for item in new_data {
-        map.insert(item.key, item.value);
-    }
-}
-
 #[allow(dead_code)]
 #[tauri::command]
 pub fn update_auto_replace_data() -> Result<(), String> {
@@ -103,7 +125,7 @@ pub fn update_auto_replace_data() -> Result<(), String> {
     let reader = BufReader::new(file);
 
     let data: Vec<KeyValue> = serde_json::from_reader(reader).expect("Failed to parse auto replacement JSON");
-    fill_auto_replacement_data(data);
+    set_auto_replacement_data(data);
 
     Ok(())
 }
@@ -112,8 +134,6 @@ pub fn enable_key_listener() {
     initialize_auto_repl_map();
     initialize_key_log(&KEY_LOG);
     IS_SENDING.set(Arc::new(Mutex::new(false))).unwrap();
-    IS_SHIFT_PRESSED.set(Arc::new(Mutex::new(false))).unwrap();
-    IS_BAD_MODIFIER_PRESSED.set(Arc::new(Mutex::new(false))).unwrap();
     update_auto_replace_data().unwrap();
 
     thread::spawn(move || {
@@ -121,26 +141,7 @@ pub fn enable_key_listener() {
             handle_event(event);
         }).unwrap();
     });
-
-    // thread::spawn(move || {
-    //     let device_state = DeviceState::new();
-    //
-    //     let mut prev_keys = vec![];
-    //     loop {
-    //         let keys = device_state.get_keys();
-    //         if keys != prev_keys && !keys.is_empty() {
-    //             println!("[Keyboard] {:?}", keys);
-    //         }
-    //         prev_keys = keys;
-    //     }
-    // });
 }
-
-static LAST_EVENT: OnceLock<Arc<Mutex<Event>>> = OnceLock::new();
-
-static IS_SHIFT_PRESSED: OnceLock<Arc<Mutex<bool>>> = OnceLock::new();
-
-static IS_BAD_MODIFIER_PRESSED: OnceLock<Arc<Mutex<bool>>> = OnceLock::new();
 
 fn handle_event(event: Event) {
     if is_sending() || is_user_auto_repl_map_empty() {
@@ -148,32 +149,7 @@ fn handle_event(event: Event) {
     }
 
     if let EventType::KeyPress(key) = event.event_type {
-        if vec![inKey::ShiftLeft, inKey::ShiftRight].contains(&key) {
-            *(IS_SHIFT_PRESSED.get().unwrap().lock()) = true;
-        }
-
-        let mut x = LAST_EVENT.get_or_init(|| Arc::new(Mutex::new(
-            Event {
-                time: time::SystemTime::now(),
-                name: None,
-                event_type: EventType::KeyRelease(Unknown(0))
-            }
-        ))).lock();
-        *x = event.clone();
-
         save_auto_replacement_log(&key, event.clone());
-    }
-
-    if let EventType::KeyRelease(key) = event.event_type {
-        // hack to get name for KeyRelease, bc rdev listen doesn't save name for KeyRelease
-        // rdev-0.5.3/src/windows/listen.rs:24
-        // let mut keyboard = rdevKeyboard::new().unwrap();
-        // let name = keyboard.add(&EventType::KeyPress(key));
-
-        if vec![inKey::ShiftLeft, inKey::ShiftRight].contains(&key) {
-            *(IS_SHIFT_PRESSED.get().unwrap().lock()) = false;
-            return;
-        }
     }
 }
 
@@ -187,8 +163,9 @@ fn save_auto_replacement_log(key: &inKey, event: Event) {
         inKey::Num4, inKey::Num5, inKey::Num6, inKey::Num7, inKey::Num8, inKey::Num9,
         inKey::Num0, inKey::Minus, inKey::Equal];
 
+    // here may be some edge cases when modifiers reset buffer when shouldn't
     if !key_str.starts_with("Key") && !extra_keys.contains(key) && !num_row.contains(key) {
-        println!("-ignored: {:#?}", key);
+        clear_key_log();
         return;
     }
 
@@ -206,7 +183,7 @@ fn save_auto_replacement_log(key: &inKey, event: Event) {
             event,
         });
 
-    println!("====BUF> {:#?}", get_auto_repl_buffer_string().unwrap());
+    println!("====BUF> {:#?}", auto_repl_buffer_string().unwrap());
     handle_auto_replacement();
 }
 
@@ -216,8 +193,8 @@ fn is_valid_key_name(name: &String) -> bool {
     )
 }
 
-fn is_user_auto_repl_map_empty() -> bool {
-    USER_MAP.get().unwrap().lock().is_empty()
+fn contains_escape_string(s: &String) -> bool {
+    s.chars().any(|c| c.is_ascii_control())
 }
 
 /// Handles the automatic replacement of text in the buffer.
@@ -226,7 +203,7 @@ fn is_user_auto_repl_map_empty() -> bool {
 /// `USER_AUTO_REPLACEMENT_MAP`, the function replaces the key with its
 /// corresponding value.
 fn handle_auto_replacement() {
-    match get_auto_repl_buffer_string() {
+    match auto_repl_buffer_string() {
         Some(buf) => {
             let user_auto_repl_map = USER_MAP.get().unwrap().lock();
             if !user_auto_repl_map.keys().any(|k| buf.contains(k)) {
@@ -236,9 +213,7 @@ fn handle_auto_replacement() {
             let map_key = user_auto_repl_map.keys().find(|&kk| buf.contains(&*kk)).unwrap().clone();
             let replacement = user_auto_repl_map.get(&map_key).unwrap().clone();
 
-            // clear buf
-            let mut auto_repl_buf = KEY_LOG.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock();
-            auto_repl_buf.keys = Vec::new();
+            clear_key_log();
 
             set_is_sending(true);
 
@@ -247,7 +222,6 @@ fn handle_auto_replacement() {
                 // remove n chars
                 send_key_times(outKey::Backspace, map_key.chars().count() as i32).unwrap();
 
-                // type replacement
                 send_string(&replacement).unwrap();
             });
 
@@ -260,24 +234,7 @@ fn handle_auto_replacement() {
 
 }
 
-fn get_auto_repl_buffer_string() -> Option<String> {
-    let x = KEY_LOG.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock();
-    if x.keys.is_empty() {
-        return None;
-    }
-
-    Some(
-        x.keys.iter()
-        .map(|e| e.event.name.clone().unwrap())
-        .collect::<Vec<String>>()
-        .join("")
-    )
-}
-
-fn contains_escape_string(s: &String) -> bool {
-    s.chars().any(|c| c.is_ascii_control())
-}
-
+// TODO: move to separate mod
 fn send_delayed_keypress(key: outKey, delay_ms: Option<u64>) -> Result<(), String> {
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
 
@@ -290,6 +247,7 @@ fn send_delayed_keypress(key: outKey, delay_ms: Option<u64>) -> Result<(), Strin
     Ok(())
 }
 
+// TODO: move to separate mod
 // May send rdev::Unknown struct
 fn send_string(string: &str) -> Result<(), String> {
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
@@ -298,6 +256,7 @@ fn send_string(string: &str) -> Result<(), String> {
     Ok(())
 }
 
+// TODO: move to separate mod
 fn send_key_times(key: outKey, len: i32) -> Result<(), String> {
     for _ in 0..len {
         send_delayed_keypress(key, None)?;
