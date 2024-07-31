@@ -152,7 +152,7 @@ impl PathBufTauri for PathBuf {
         );
 
         // \tauri\core\tauri\scripts\core.js:12
-        format!("https://asset.localhost/{}", url)
+        format!("https://asset.localhost/{url}")
     }
 }
 
