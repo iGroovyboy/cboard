@@ -5,7 +5,8 @@
 
 use tauri::{Manager};
 use app::helpers::APP_HANDLE;
-use app::{auto_replacement, filesys, tray, window, clipboard as my_clipboard};
+use app::{auto_replacement, filesys, tray, window, clipboard as my_clipboard, processes};
+use app::processes::processes;
 
 fn main() {
     tauri::Builder::default()
@@ -23,6 +24,8 @@ fn main() {
                 .unwrap_or_else(|_| panic!("AppHandle is already set"));
 
             auto_replacement::enable_key_listener();
+
+            processes::processes();
 
             Ok(())
         })
