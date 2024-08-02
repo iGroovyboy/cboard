@@ -1,11 +1,12 @@
 use std::sync::{Arc, OnceLock};
-use std::{fs, thread};
+use std::{fs, io, thread};
 use std::thread::sleep;
 use std::time::Duration;
-use arboard::{Clipboard, ImageData};
+use arboard::{Clipboard, Error, ImageData};
 use tauri::AppHandle;
 use crate::filesys;
 use parking_lot::Mutex;
+use tokio::task;
 
 // TODO: read from user settings
 pub static MAX_CLIPBOARD_ITEMS: i32 = 150;
@@ -312,7 +313,7 @@ pub fn enable_clipboard() -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn paste(item: ClipboardItem, app: AppHandle) {
+pub async fn paste(item: ClipboardItem, app: AppHandle) {
     // window::hide_window(app);
     // sleep(Duration::from_millis(50));
     let from = app
@@ -324,31 +325,29 @@ pub fn paste(item: ClipboardItem, app: AppHandle) {
         .join(&item.folder)
         .join(&item.name);
 
-    let mut clipboard = Clipboard::new().unwrap();
+    task::spawn(async move {
+        let mut clipboard = Clipboard::new().expect("Couldn't create Clipboard instance");
+        match from.extension().unwrap().to_str().unwrap() {
+            FileTypes::TXT => {
+                let content = fs::read_to_string(from).unwrap();
+                clipboard.set_html(&content, Some(&content)).unwrap();
+            }
+            FileTypes::PNG => {
+                let img = image::io::Reader::open(from).unwrap().decode().unwrap();
+                let rgba_image = img.to_rgba8();
+                let (width, height) = rgba_image.dimensions();
+                let bytes = rgba_image.into_raw();
+                let image_data = arboard::ImageData {
+                    width: width as usize,
+                    height: height as usize,
+                    bytes: std::borrow::Cow::Owned(bytes),
+                };
 
-    // TODO: fix unwraps?
-    // TODO: move to separate mods? use patterns?
-    match from.extension().unwrap().to_str().unwrap() {
-        FileTypes::TXT => {
-            let content = fs::read_to_string(from).unwrap();
-
-            clipboard.set_html(&content, Some(&content)).unwrap();
+                clipboard.set_image(image_data).unwrap();
+            }
+            &_ => {}
         }
-        FileTypes::PNG => {
-            let img = image::io::Reader::open(from).unwrap().decode().unwrap();
-            let rgba_image = img.to_rgba8();
-            let (width, height) = rgba_image.dimensions();
-            let bytes = rgba_image.into_raw();
-            let image_data = arboard::ImageData {
-                width: width as usize,
-                height: height as usize,
-                bytes: std::borrow::Cow::Owned(bytes),
-            };
-
-            clipboard.set_image(image_data).unwrap();
-        }
-        &_ => {}
-    }
+    }).await.unwrap();
 
     // TODO: move to mod
     inputbot::KeybdKey::LControlKey.press();
@@ -357,5 +356,12 @@ pub fn paste(item: ClipboardItem, app: AppHandle) {
     inputbot::KeybdKey::LControlKey.release();
 
     sleep(Duration::from_millis(50));
-    clipboard.clear().unwrap();
+    clipboard_clear().unwrap();
+}
+
+fn clipboard_clear() -> Result<(), Error>{
+    let mut clipboard = Clipboard::new().expect("Couldn't create Clipboard instance");
+    clipboard.clear()?;
+
+    Ok(())
 }

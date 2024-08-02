@@ -3,10 +3,10 @@
     windows_subsystem = "windows"
 )]
 
+use std::thread;
 use tauri::{Manager};
 use app::helpers::APP_HANDLE;
 use app::{auto_replacement, filesys, tray, window, clipboard as my_clipboard, processes};
-use app::processes::processes;
 
 fn main() {
     tauri::Builder::default()
@@ -26,6 +26,11 @@ fn main() {
             auto_replacement::enable_key_listener();
 
             processes::processes();
+
+            thread::spawn(|| unsafe {
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                rt.block_on(processes::watch_active_window());
+            });
 
             Ok(())
         })

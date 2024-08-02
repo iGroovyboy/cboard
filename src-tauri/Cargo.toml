@@ -21,12 +21,16 @@ tauri = { version = "1.5", features = [ "fs-write-file", "protocol-asset", "dial
 inputbot = { git = "https://github.com/obv-mikhail/InputBot", branch = "develop" }
 arboard = "3.2.0"
 image = "0.25.1"
+# sys-locale ???
 sys-locale = "0.3.1"
 winapi = { version = "0.3", features = ["winuser", "winnt", "winnls"] }
 rdev = { version = "0.5.3", features = ["serialize"] }
 enigo = { version = "0.2.1" }
+device_query = "2.1.0"
 percent-encoding = "2.3.1"
 parking_lot = "0.12.3"
+sysinfo = "0.31"
+tokio = { version = "^1.19", features = ["rt", "time"] }
 
 [features]
 # by default Tauri runs in production mode

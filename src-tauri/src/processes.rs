@@ -1,11 +1,10 @@
 use std::collections::{HashMap, HashSet};
-use std::ffi::OsString;
-use std::os::windows::ffi::OsStringExt;
 use std::path::{Path, PathBuf};
 use sysinfo::{Pid, Process, ProcessStatus, RefreshKind};
 use winapi::shared::minwindef::{BOOL, LPARAM};
 use winapi::shared::windef::HWND;
-use winapi::um::winuser::{EnumWindows, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible};
+use winapi::um::winuser::{EnumWindows, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible};
+use tokio::time::{sleep, Duration};
 
 #[derive(Debug, Clone)]
 pub struct MyProcess {
@@ -13,6 +12,22 @@ pub struct MyProcess {
     title: String,
     filename: String,
     filepath: String,
+}
+
+pub async unsafe fn watch_active_window() {
+    loop {
+        sleep(Duration::from_millis(500)).await;
+        println!("GO! {:#?}", active_window());
+    }
+}
+
+pub unsafe fn active_window() -> (u32, String) {
+    let hwnd = GetForegroundWindow();
+
+    let mut pid: u32 = 0;
+    GetWindowThreadProcessId(hwnd, &mut pid);
+
+    (pid, window_text(hwnd))
 }
 
 pub fn processes() -> Vec<MyProcess> {
@@ -34,12 +49,11 @@ pub fn processes() -> Vec<MyProcess> {
     list
 }
 
-unsafe fn window_text(hwnd: HWND, _pid: &mut u32) -> String {
+unsafe fn window_text(hwnd: HWND) -> String {
     let length = GetWindowTextLengthW(hwnd) + 1;
     let mut buffer: Vec<u16> = vec![0; length as usize];
     GetWindowTextW(hwnd, buffer.as_mut_ptr(), length);
-    let window_title = OsString::from_wide(&buffer[..length as usize - 1])
-        .to_string_lossy().to_string();
+    let window_title = String::from_utf16_lossy(&buffer[..length as usize - 1]);
 
     window_title
 }
@@ -54,7 +68,7 @@ unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: LPARAM) -> BOOL 
     let mut pid: u32 = 0;
     GetWindowThreadProcessId(hwnd, &mut pid);
     if pid != 0 {
-        process_ids.insert((pid, window_text(hwnd, &mut pid)));
+        process_ids.insert((pid, window_text(hwnd)));
     }
 
     1 // continue enumeration
