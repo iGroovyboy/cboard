@@ -54,9 +54,10 @@
         <div class="controls flex items-center">
           <button
             class="p-1 w-6 ml-1 opacity-50 hover:opacity-100"
-            @click="bookmarkItem(item)"
+            @click="moveItemToFolder(item)"
           >
-            <img src="../assets/star.svg" alt="Bookmark" />
+            <img v-if="activeTabId == Folder.Clipboard" src="../assets/star.svg" alt="Bookmark" />
+            <img v-else src="../assets/star-half-outline.svg" alt="UnBookmark" />
           </button>
           <button
             class="p-1 w-6 ml-1 opacity-50 hover:opacity-100"
@@ -82,7 +83,7 @@
 import AppTabs from "./AppTabs.vue";
 import { ref } from "vue";
 import { FILE_EXT, Folder, FOLDER_NAME, MENU_TYPE } from "../common/constants";
-import { ClipboardData } from "../common/interfaces";
+import { ClipboardData, ClipboardItem } from "../common/interfaces";
 import { FileEntry } from "@tauri-apps/api/fs";
 import { getFilesData } from "../services/backend";
 import { appWindow } from "@tauri-apps/api/window";
@@ -124,17 +125,13 @@ const fetchData = async () => {
 
 const switchTab = async (tabId: number) => {
   if (tabId !== activeTabId.value) {
-    await fetchData();
     activeTabId.value = tabId;
+    await fetchData();
   }
 };
 
 const toggleNextTab = () => {
   activeTabId.value = +!!!activeTabId.value;
-};
-
-const bookmarkItem = () => {
-  //...
 };
 
 const pasteItem = async (item: ClipboardItem) => {
@@ -146,11 +143,15 @@ const pasteItem = async (item: ClipboardItem) => {
   invoke("paste", { item: item });
 };
 
-const moveItemToFolder = (item: ClipboardItem) => {
-  invoke("move_clipboard_item", {
+const moveItemToFolder = async (item: ClipboardItem) => {
+  const toFolder = activeTabId.value === Folder.Clipboard 
+    ? FOLDER_NAME.Favorites 
+    : FOLDER_NAME.Clipboard;
+  
+  await invoke("move_clipboard_item", {
     from: item.path,
     filename: item.name,
-    folder: FOLDER_NAME.Favorites,
+    folder: toFolder,
   });
 };
 

@@ -101,7 +101,7 @@ pub fn remove_clipboard_item(filename: String, folder: String, app: tauri::AppHa
 
 #[allow(dead_code)]
 #[tauri::command]
-pub fn move_clipboard_item(from: String, filename: String, folder: String, app: tauri::AppHandle) {
+pub async fn move_clipboard_item(from: String, filename: String, folder: String, app: tauri::AppHandle) {
     let to = app
         .path_resolver()
         .app_local_data_dir()
