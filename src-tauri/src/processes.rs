@@ -1,17 +1,24 @@
 use std::collections::{HashMap, HashSet};
 use std::path::{Path, PathBuf};
+use serde::{Deserialize, Serialize};
 use sysinfo::{Pid, Process, ProcessStatus, RefreshKind};
 use winapi::shared::minwindef::{BOOL, LPARAM};
 use winapi::shared::windef::HWND;
 use winapi::um::winuser::{EnumWindows, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible};
 use tokio::time::{sleep, Duration};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MyProcess {
     pid: u32,
     title: String,
     filename: String,
     filepath: String,
+}
+
+#[tauri::command]
+pub async fn get_proccesses_list() -> Result<String, String> {
+    let data = processes();
+    Ok(serde_json::to_string(&data).unwrap_or("oops".to_string()))
 }
 
 pub async unsafe fn watch_active_window() {

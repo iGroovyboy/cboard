@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from "vue-router";
 import Clipboard from "../components/AppClipboard.vue";
 import Autoreplacement from "../components/AppAutoreplacement.vue";
 import Settings from "../components/AppSettings.vue";
+import Blacklist from "../components/AppBlacklist.vue";
 import { ROUTE } from "./routenames";
 
 const routes = [
@@ -19,6 +20,11 @@ const routes = [
     path: "/settings",
     name: ROUTE.Settings,
     component: Settings,
+  },
+  {
+    path: "/blacklist",
+    name: ROUTE.Blacklist,
+    component: Blacklist,
   },
 ];
 

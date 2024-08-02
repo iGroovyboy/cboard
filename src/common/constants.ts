@@ -5,6 +5,7 @@ export enum Folder {
 
 export const FILE_NAME = {
   Autoreplace: "autoreplace.json",
+  Blacklist: "blacklist.json",
 };
 
 export const FOLDER_NAME = {

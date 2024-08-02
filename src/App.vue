@@ -2,19 +2,17 @@
   <app-titlebar />
 
   <div class="wrapper flex flex-col h-[calc(100vh-32px)]">
-    <router-view></router-view>
+    <router-view :key="$route.fullPath" />
   </div>
 </template>
 
 <script setup lang="ts">
-import { register, unregister } from "@tauri-apps/api/globalShortcut";
+import { register } from "@tauri-apps/api/globalShortcut";
 import {
   appWindow,
   LogicalPosition,
   LogicalSize,
 } from "@tauri-apps/api/window";
-import { ref } from "vue";
-import { MENU_TYPE } from "./common/constants";
 import { SETTINGS_KEY } from "./common/interfaces";
 import { debounce } from "./common/helpers";
 import AppTitlebar from "./components/AppTitlebar.vue";
@@ -22,8 +20,6 @@ import AppTitlebar from "./components/AppTitlebar.vue";
 import ls from "./common/localStorage";
 
 const invoke = window.__TAURI__.invoke;
-
-let windowPos = {};
 
 const bootUp = async () => {
   document.addEventListener("contextmenu", (event) => event.preventDefault());

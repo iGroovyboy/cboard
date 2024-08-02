@@ -11,12 +11,12 @@ use app::{auto_replacement, filesys, tray, window, clipboard as my_clipboard, pr
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
-            #[cfg(debug_assertions)] // only include this code on debug builds
-            {
-                let window = app.get_window("main").unwrap();
-                window.open_devtools();
-                window.close_devtools();
-            }
+            // #[cfg(debug_assertions)] // only include this code on debug builds
+            // {
+            //     let window = app.get_window("main").unwrap();
+            //     window.open_devtools();
+            //     window.close_devtools();
+            // }
 
             let handle = app.handle().clone();
             APP_HANDLE
@@ -25,12 +25,10 @@ fn main() {
 
             auto_replacement::enable_key_listener();
 
-            processes::processes();
-
-            thread::spawn(|| unsafe {
-                let rt = tokio::runtime::Runtime::new().unwrap();
-                rt.block_on(processes::watch_active_window());
-            });
+            // thread::spawn(|| unsafe {
+            //     let rt = tokio::runtime::Runtime::new().unwrap();
+            //     rt.block_on(processes::watch_active_window());
+            // });
 
             Ok(())
         })
@@ -45,6 +43,7 @@ fn main() {
             my_clipboard::enable_clipboard,
             my_clipboard::paste,
             auto_replacement::update_auto_replace_data,
+            processes::get_proccesses_list,
         ])
         .system_tray(tray::make_tray())
         .on_system_tray_event(tray::handle_tray_events)

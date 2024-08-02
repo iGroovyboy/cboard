@@ -15,6 +15,9 @@
         >
       </li>
       <li>
+        <router-link :to="{ name: ROUTE.Blacklist }">Blacklist apps</router-link>
+      </li>
+      <li>
         <router-link :to="{ name: ROUTE.Settings }">Settings</router-link>
       </li>
       <li @click="action(ACTION.About)">About</li>

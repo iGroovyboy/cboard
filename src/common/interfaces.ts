@@ -24,3 +24,10 @@ export interface AutoReplacementItem {
   key: string;
   value: string;
 }
+
+export interface AppItem {
+  filepath: string;
+  enabled: boolean;
+  filename?: string;
+  title?: string;
+}
