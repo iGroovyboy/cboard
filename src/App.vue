@@ -18,6 +18,7 @@ import { debounce } from "./common/helpers";
 import AppTitlebar from "./components/AppTitlebar.vue";
 
 import ls from "./common/localStorage";
+import { onMounted } from "vue";
 
 const invoke = window.__TAURI__.invoke;
 
@@ -38,15 +39,15 @@ const bootUp = async () => {
     }, 500),
   );
 
-  if (ls.has(SETTINGS_KEY.WINDOW_POS)) {
-    const pos = ls.get(SETTINGS_KEY.WINDOW_POS);
-    await appWindow.setPosition(new LogicalPosition(pos.x, pos.y));
-  }
-
-  if (ls.has(SETTINGS_KEY.WINDOW_SIZE)) {
-    const size = ls.get(SETTINGS_KEY.WINDOW_SIZE);
-    await appWindow.setSize(new LogicalSize(size.width, size.height));
-  }
+  // TODO: fix: uncommented this causes innere components to not update until window title clicked or updated
+  // if (ls.has(SETTINGS_KEY.WINDOW_POS)) {
+  //   const pos = ls.get(SETTINGS_KEY.WINDOW_POS);
+  //   await appWindow.setPosition(new LogicalPosition(pos.x, pos.y));
+  // }
+  // if (ls.has(SETTINGS_KEY.WINDOW_SIZE)) {
+  //   const size = ls.get(SETTINGS_KEY.WINDOW_SIZE);
+  //   await appWindow.setSize(new LogicalSize(size.width, size.height));
+  // }
 
   // TODO: make customizable
   await register("CommandOrControl+1", () => {

@@ -11,12 +11,12 @@ use app::{auto_replacement, filesys, tray, window, clipboard as my_clipboard, pr
 fn main() {
     tauri::Builder::default()
         .setup(|app| {
-            // #[cfg(debug_assertions)] // only include this code on debug builds
-            // {
-            //     let window = app.get_window("main").unwrap();
-            //     window.open_devtools();
-            //     window.close_devtools();
-            // }
+            #[cfg(debug_assertions)] // only include this code on debug builds
+            {
+                let window = app.get_window("main").unwrap();
+                window.open_devtools();
+                window.close_devtools();
+            }
 
             let handle = app.handle().clone();
             APP_HANDLE
