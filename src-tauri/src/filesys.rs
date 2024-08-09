@@ -3,9 +3,9 @@ use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;
 use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
-use serde::{Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tauri::Manager;
-use crate::clipboard::FileTypes;
+use crate::{clipboard::FileTypes};
 use crate::helpers::{get_tauri_handle};
 
 #[allow(dead_code)]
@@ -16,6 +16,7 @@ pub const FOLDER_CLIPBOARD: &str = "clipboard";
 pub const FOLDER_FAVOURITES: &str = "favorites";
 #[allow(dead_code)]
 pub const FILENAME_AUTO_REPLACEMENT: &str = "autoreplace.json";
+pub const FILENAME_APPS_BLACKLIST: &str = "blacklist.json";
 
 pub const FILE_MAX_LENGTH: u8 = 255;
 
@@ -253,4 +254,22 @@ pub async fn read_clipboard_data() -> Result<String, String> {
     }
 
     Ok(serde_json::to_string(&data).unwrap_or("oops".to_string()))
+}
+
+pub fn read_json_data<T: DeserializeOwned>(filename: &str) -> Result<T, Box<dyn std::error::Error>> {
+    let app = get_tauri_handle().clone();
+    let from = app
+        .path_resolver()
+        .app_local_data_dir()
+        .expect("Failed to resolve app local dir")
+        .as_path()
+        .join("data")
+        .join(filename);
+
+    let file = File::open(from).unwrap();
+    let reader = BufReader::new(file);
+
+    let data: T = serde_json::from_reader(reader)?;
+
+    Ok(data)
 }

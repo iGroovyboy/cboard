@@ -5,6 +5,7 @@ use std::time::Duration;
 use arboard::{Clipboard, Error, ImageData};
 use tauri::AppHandle;
 use crate::filesys;
+use crate::processes::app_active_state;
 use parking_lot::Mutex;
 use tokio::task;
 
@@ -281,10 +282,14 @@ pub fn enable_clipboard() -> Result<(), String> {
         .expect("Couldn't create required directories");
 
     // image can get to clipboard in many ways, so we use interval-based checker
-    thread::spawn(move || {
+    thread::Builder::new().name("clipboard:image_checker".to_string()).spawn(move || {
         my_clipboard::image::init_prev_image().unwrap();
 
         loop {
+            if app_active_state() == false {
+                continue;
+            }
+
             sleep(Duration::from_millis(IMG_THREAD_INTERVAL));
 
             if !my_clipboard::has_image() {
@@ -300,6 +305,9 @@ pub fn enable_clipboard() -> Result<(), String> {
     // event listener: Ctrl + C
     inputbot::KeybdKey::CKey.bind(move || {
         if inputbot::KeybdKey::LControlKey.is_pressed() {
+            if app_active_state() == false {
+                return;
+            }
             // without sleep we get access to prev clipboard data
             sleep(Duration::from_millis(100));
 

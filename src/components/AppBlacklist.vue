@@ -88,7 +88,7 @@ const toggleApp = (item: AppItem) => {
 
 const save = async () => {
     if (await saveTextFile(FILE_NAME.Blacklist, JSON.stringify(blacklistedApps.value))) {
-        //invoke("update_auto_replace_data");
+        invoke("update_blacklist_data");
     }
 }
 

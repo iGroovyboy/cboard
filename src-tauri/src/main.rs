@@ -25,10 +25,10 @@ fn main() {
 
             auto_replacement::enable_key_listener();
 
-            // thread::spawn(|| unsafe {
-            //     let rt = tokio::runtime::Runtime::new().unwrap();
-            //     rt.block_on(processes::watch_active_window());
-            // });
+            thread::spawn(|| unsafe {
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                rt.block_on(processes::watch_active_window());
+            });
 
             Ok(())
         })
@@ -44,6 +44,7 @@ fn main() {
             my_clipboard::paste,
             auto_replacement::update_auto_replace_data,
             processes::get_proccesses_list,
+            processes::update_blacklist_data
         ])
         .system_tray(tray::make_tray())
         .on_system_tray_event(tray::handle_tray_events)

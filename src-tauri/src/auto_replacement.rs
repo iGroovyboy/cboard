@@ -10,6 +10,7 @@ use enigo::Direction::{Press, Release};
 use crate::filesys::{FILENAME_AUTO_REPLACEMENT};
 use crate::helpers::{get_tauri_handle};
 use crate::keyboard_layouts::get_current_keyboard_layout;
+use crate::processes::app_active_state;
 use parking_lot::Mutex;
 
 #[derive(Debug)]
@@ -32,7 +33,7 @@ impl Default for KeyLog {
 }
 
 #[derive(Deserialize, Debug)]
-struct KeyValue {
+pub struct KeyValue {
     key: String,
     value: String,
 }
@@ -136,12 +137,16 @@ pub fn enable_key_listener() {
     IS_SENDING.set(Arc::new(Mutex::new(false))).unwrap();
     update_auto_replace_data().unwrap();
 
-    thread::spawn(move || {
+    thread::Builder::new().name("auto_replacement:key_listener".to_string()).spawn(move || {
         listen(move |event| {
-            handle_event(event);
+            if app_active_state() {
+                handle_event(event);
+            }
         }).unwrap();
     });
 }
+
+
 
 fn handle_event(event: Event) {
     if is_sending() || is_user_auto_repl_map_empty() {
@@ -218,7 +223,7 @@ fn handle_auto_replacement() {
             set_is_sending(true);
 
             // without thread this will perform actions BEFORE last symbols is typed in a window
-            thread::spawn(move || {
+            thread::Builder::new().name("auto_replacement:send_keys".to_string()).spawn(move || {
                 // remove n chars
                 send_key_times(outKey::Backspace, map_key.chars().count() as i32).unwrap();
 
