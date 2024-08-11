@@ -7,8 +7,9 @@
                 class="item flex gap-x-2 px-1 mb-1 items-center leading-5"
                 :class="{ 'bg-sky-600 text-white': selectedItemId == i }">
                 <input class="min-h-4 min-w-4" type="checkbox" v-model="item.enabled" @change="toggleApp(item)">
-                <span v-text="item.title || item.filename" :title="item.title || item.filename"
-                    class="text-sm text-nowrap" :class="{ 'text-white/40': !item.enabled }" />
+                <span v-text="item.title || item.filename"
+                    :title="(item.title || item.filename) + `   (${item.filename})`" class="text-sm text-nowrap"
+                    :class="{ 'text-white/40': !item.enabled }" />
             </div>
         </div>
         <div class="controls fixed bottom-0 left-0 z-10 border border-white/10 bg-neutral-800 w-full">
