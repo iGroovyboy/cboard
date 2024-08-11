@@ -1,7 +1,8 @@
 <template>
     <nav>
         <ul class="tabs flex flex-row cursor-pointer">
-            <li @contextmenu="$emit('contextmenu', $event, Folder.Clipboard)" @click="$emit('switch-tab', Folder.Clipboard)"
+            <li @contextmenu="$emit('contextmenu', $event, Folder.Clipboard)"
+                @click="$emit('switch-tab', Folder.Clipboard)"
                 class="relative p-3 px-5 text-xs sm:text-base border-b flex shrink-0"
                 :class="{ active: activeTabId === Folder.Clipboard, 'border-gray-500': activeTabId !== Folder.Clipboard }">
                 <div class="z-1">Clipboard</div>
@@ -10,10 +11,11 @@
                     {{ clipLen }}
                 </div>
             </li>
-            <li @contextmenu="$emit('contextmenu', $event, Folder.Clipboard)" @click="$emit('switch-tab', Folder.Favorites)"
+            <li @contextmenu="$emit('contextmenu', $event, Folder.Clipboard)"
+                @click="$emit('switch-tab', Folder.Favorites)"
                 class="relative p-3 px-5 text-xs sm:text-base border-b flex shrink-0"
                 :class="{ active: activeTabId === Folder.Favorites, 'border-gray-500': activeTabId !== Folder.Favorites }">
-                <img src="./assets/star.svg" alt="" class="w-4 mt-[-3px] mr-1">
+                <img src="../assets/star.svg" alt="" class="w-4 mt-[-3px] mr-1">
                 <div class="z-1">Favorites</div>
                 <div v-if="favLen"
                     class="opacity-80 z-0 chip absolute text-[10px] m-0 p-0 right-0 top-1 px-[2px] rounded-md">

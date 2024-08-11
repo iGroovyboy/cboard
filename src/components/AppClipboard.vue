@@ -1,50 +1,28 @@
 <template>
-  <app-tabs
-    :active-tab-id="activeTabId"
-    :clip-len="data?.[Folder.Clipboard]?.children?.length"
-    :fav-len="data?.[Folder.Favorites]?.children?.length"
-    @switch-tab="switchTab"
-    @mainmenu="menuType = MENU_TYPE.Main"
-    @contextmenu="contextMenu"
-  />
+  <app-tabs :active-tab-id="activeTabId" :clip-len="data?.[Folder.Clipboard]?.children?.length"
+    :fav-len="data?.[Folder.Favorites]?.children?.length" @switch-tab="switchTab" @mainmenu="menuType = MENU_TYPE.Main"
+    @contextmenu="contextMenu" />
 
   <div class="search flex flex-row p-2">
-    <input
-      type="text"
-      placeholder="Search"
-      class="p-1 text-xs sm:text-base w-11/12 border-sky-500"
-    />
-    <img
-      src="./assets/search.svg"
-      alt=""
-      class="w-8 max-h-10 sm:w-1/12 pl-2 opacity-30 hover:opacity-100 cursor-pointer"
-    />
+    <input type="text" placeholder="Search" class="p-1 text-xs sm:text-base w-11/12 border-sky-500" />
+    <img src="../assets/search.svg" alt=""
+      class="w-8 max-h-10 sm:w-1/12 pl-2 opacity-30 hover:opacity-100 cursor-pointer" />
   </div>
 
   <main class="ml-2 mr-1  overflow-y-scroll overflow-x-hidden pr-1">
     <ul v-if="data && data[activeTabId] && data[activeTabId].children">
-      <li
-        v-for="(item, key) in data[activeTabId].children"
-        :key="key"
-        class="flex pl-1 pb-2 mb-2 border border-transparent border-b border-b-neutral-700"
-        :class="{
+      <li v-for="(item, key) in data[activeTabId].children" :key="key"
+        class="flex pl-1 pb-2 mb-2 border border-transparent border-b border-b-neutral-700" :class="{
           'border border-white/50 border-b-white/50': key === focusedElementId,
-        }"
-      >
+        }">
         <div class="item w-11/12 overflow-hidden cursor-pointer" @click="pasteItem(item)">
-          <div
-            class="value text-xs sm:text-base pb-2 mb-2 leading-5 overflow-hidden"
-            :class="{ 'max-h-14': item.extension === FILE_EXT.TXT }"
-          >
+          <div class="value text-xs sm:text-base pb-2 mb-2 leading-5 overflow-hidden"
+            :class="{ 'max-h-14': item.extension === FILE_EXT.TXT }">
             <template v-if="item.extension === FILE_EXT.TXT">{{
               item.contents
-            }}</template>
+              }}</template>
             <template v-else-if="item.extension === FILE_EXT.PNG">
-              <img
-                :src="convertFileSrc(item.path)"
-                class="border border-white/50 hover:border-white"
-                alt="image"
-              />
+              <img :src="convertFileSrc(item.path)" class="border border-white/50 hover:border-white" alt="image" />
             </template>
           </div>
           <div class="meta text-xs text-neutral-500">
@@ -52,17 +30,11 @@
           </div>
         </div>
         <div class="controls flex items-center">
-          <button
-            class="p-1 w-6 ml-1 opacity-50 hover:opacity-100"
-            @click="moveItemToFolder(item)"
-          >
+          <button class="p-1 w-6 ml-1 opacity-50 hover:opacity-100" @click="moveItemToFolder(item)">
             <img v-if="activeTabId == Folder.Clipboard" src="../assets/star.svg" alt="Bookmark" />
             <img v-else src="../assets/star-half-outline.svg" alt="UnBookmark" />
           </button>
-          <button
-            class="p-1 w-6 ml-1 opacity-50 hover:opacity-100"
-            @click="deleteItem(item)"
-          >
+          <button class="p-1 w-6 ml-1 opacity-50 hover:opacity-100" @click="deleteItem(item)">
             <img src="../assets/trash.svg" alt="Delete" />
           </button>
         </div>
@@ -70,13 +42,8 @@
     </ul>
   </main>
 
-  <app-popup
-    ref="popup"
-    :type="menuType"
-    :currentFolder="contextMenuFolder"
-    @click="menuType = MENU_TYPE.None"
-    @close="menuType = MENU_TYPE.None"
-  />
+  <app-popup ref="popup" :type="menuType" :currentFolder="contextMenuFolder" @click="menuType = MENU_TYPE.None"
+    @close="menuType = MENU_TYPE.None" />
 </template>
 
 <script setup lang="ts">
@@ -144,10 +111,10 @@ const pasteItem = async (item: ClipboardItem) => {
 };
 
 const moveItemToFolder = async (item: ClipboardItem) => {
-  const toFolder = activeTabId.value === Folder.Clipboard 
-    ? FOLDER_NAME.Favorites 
+  const toFolder = activeTabId.value === Folder.Clipboard
+    ? FOLDER_NAME.Favorites
     : FOLDER_NAME.Clipboard;
-  
+
   await invoke("move_clipboard_item", {
     from: item.path,
     filename: item.name,
