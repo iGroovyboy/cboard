@@ -22,5 +22,7 @@ pub fn show_window() {
 
 #[tauri::command]
 pub fn quit() {
-    std::process::exit(0);
+    let app = get_tauri_handle().clone();
+    let window = app.get_window("main").unwrap();
+    window.close().unwrap();
 }

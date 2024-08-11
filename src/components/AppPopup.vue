@@ -7,10 +7,10 @@
     <ul v-else-if="type === MENU_TYPE.Main" class="menu main">
       <li class="flex">
         <router-link :to="{ name: ROUTE.Autoreplace }"
-          class="text-white w-full hover:text-white">Auto-replacement</router-link>
+          class="text-white w-full hover:text-white cursor-default">Auto-replacement</router-link>
       </li>
       <li class="flex">
-        <router-link :to="{ name: ROUTE.Blacklist }" class="text-white w-full hover:text-white">Blacklist
+        <router-link :to="{ name: ROUTE.Blacklist }" class="text-white w-full hover:text-white cursor-default">Blacklist
           apps</router-link>
       </li>
       <!-- <li>

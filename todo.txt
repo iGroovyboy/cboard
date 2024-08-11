@@ -1,6 +1,0 @@
--titlebar
--tray
--clipboard
- - favorites
--text templates
--options
