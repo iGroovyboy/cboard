@@ -4,7 +4,7 @@ use std::{thread, time};
 use std::fs::File;
 use std::io::BufReader;
 use serde::Deserialize;
-use rdev::{Event, EventType, Key as inKey, listen, Keyboard as rdevKeyboard, KeyboardState};
+use rdev::{Event, EventType, Key as inKey, listen};
 use enigo::{Enigo, Settings, Key as outKey, Keyboard};
 use enigo::Direction::{Press, Release};
 use crate::filesys::{FILENAME_AUTO_REPLACEMENT};
@@ -13,6 +13,7 @@ use crate::keyboard_layouts::get_current_keyboard_layout;
 use crate::processes::app_active_state;
 use parking_lot::Mutex;
 
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct KeyEvent {
     event: Event,
@@ -137,7 +138,8 @@ pub fn enable_key_listener() {
     IS_SENDING.set(Arc::new(Mutex::new(false))).unwrap();
     update_auto_replace_data().unwrap();
 
-    thread::Builder::new().name("auto_replacement:key_listener".to_string()).spawn(move || {
+    let _ = thread::Builder::new().name("auto_replacement:key_listener".to_string())
+    .spawn(move || {
         listen(move |event| {
             if app_active_state() {
                 handle_event(event);
@@ -223,7 +225,8 @@ fn handle_auto_replacement() {
             set_is_sending(true);
 
             // without thread this will perform actions BEFORE last symbols is typed in a window
-            thread::Builder::new().name("auto_replacement:send_keys".to_string()).spawn(move || {
+            let _ = thread::Builder::new().name("auto_replacement:send_keys".to_string())
+            .spawn(move || {
                 // remove n chars
                 send_key_times(outKey::Backspace, map_key.chars().count() as i32).unwrap();
 

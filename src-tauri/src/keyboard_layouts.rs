@@ -9,7 +9,7 @@ use winapi::um::winnt::{LOCALE_NAME_MAX_LENGTH, MAKELCID, SORT_DEFAULT};
 use winapi::um::winuser::GetWindowThreadProcessId;
 
 /// TODO: add linux/macos
-const KL_NAMELENGTH: usize = 9;
+// const KL_NAMELENGTH: usize = 9;
 
 pub fn get_current_keyboard_layout() -> Option<String> {
     unsafe {

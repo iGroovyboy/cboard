@@ -146,7 +146,7 @@ trait PathBufTauri {
 }
 
 impl PathBufTauri for PathBuf {
-    fn asset_path(mut self) -> String {
+    fn asset_path(self) -> String {
         let url = utf8_percent_encode(
             self.to_str().unwrap(),
             NON_ALPHANUMERIC
@@ -213,13 +213,13 @@ pub async fn read_clipboard_data() -> Result<String, String> {
 
     let mut data: Vec<StorageFolder> = Vec::new();
 
-    let mut entries = fs::read_dir(dir).unwrap()
+    let entries = fs::read_dir(dir).unwrap()
         .filter(|e| e.as_ref().unwrap().path().is_dir())
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, io::Error>>().unwrap();
 
     for subdir in entries {
-        let mut files = fs::read_dir(&subdir).unwrap()
+        let files = fs::read_dir(&subdir).unwrap()
             .collect::<Result<Vec<_>, io::Error>>().unwrap();
 
         let mut children = Vec::new();

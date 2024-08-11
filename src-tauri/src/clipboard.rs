@@ -1,5 +1,5 @@
 use std::sync::{Arc, OnceLock};
-use std::{fs, io, thread};
+use std::{fs, thread};
 use std::thread::sleep;
 use std::time::Duration;
 use arboard::{Clipboard, Error, ImageData};
@@ -41,7 +41,7 @@ pub static PREV_IMAGE: OnceLock<Arc<Mutex<Option<ImageData>>>> = OnceLock::new()
 
 pub mod my_clipboard {
     use std::fs;
-    use std::sync::{Arc, Mutex};
+    use std::sync::{Arc};
 
     use arboard::Clipboard;
     use tauri::Manager;
@@ -112,7 +112,7 @@ pub mod my_clipboard {
     pub mod text {
         use std::fs;
         use std::path::PathBuf;
-        use std::sync::{Arc, Mutex};
+        use std::sync::{Arc};
 
         use crate::clipboard::{ClipboardContent, my_clipboard, PREV_TEXT};
         use crate::clipboard::my_clipboard::get_instance;
@@ -188,7 +188,7 @@ pub mod my_clipboard {
 
     pub mod image {
         use std::path::PathBuf;
-        use std::sync::{Arc, Mutex};
+        use std::sync::{Arc};
 
         use arboard::ImageData;
         use image::{ImageBuffer, Rgba};
@@ -282,7 +282,8 @@ pub fn enable_clipboard() -> Result<(), String> {
         .expect("Couldn't create required directories");
 
     // image can get to clipboard in many ways, so we use interval-based checker
-    thread::Builder::new().name("clipboard:image_checker".to_string()).spawn(move || {
+    let _ = thread::Builder::new().name("clipboard:image_checker".to_string())
+    .spawn(move || {
         my_clipboard::image::init_prev_image().unwrap();
 
         loop {

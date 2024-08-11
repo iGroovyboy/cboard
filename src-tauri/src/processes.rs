@@ -1,11 +1,9 @@
-use std::borrow::{Borrow, BorrowMut};
-use std::collections::{HashMap, HashSet};
-use std::path::{Path, PathBuf};
+use std::collections::{HashSet};
+use std::path::{Path};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
-use std::time::Instant;
 use serde::{Deserialize, Serialize};
-use sysinfo::{Pid, Process, ProcessStatus, RefreshKind, System};
+use sysinfo::{Pid, RefreshKind, System};
 use winapi::shared::minwindef::{BOOL, LPARAM};
 use winapi::shared::windef::HWND;
 use winapi::um::winuser::{EnumWindows, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible};
@@ -32,6 +30,7 @@ pub struct MyProcess {
     filepath: String,
 }
 
+#[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct BlacklistItem {
     filepath: String,
@@ -40,7 +39,7 @@ pub struct BlacklistItem {
     title: Option<String>,
 }
 
-struct SystemProcesses {
+pub struct SystemProcesses {
     sys: System,
 }
 
@@ -72,7 +71,7 @@ impl SystemProcesses {
 }
 
 pub async unsafe fn watch_active_window() {
-    update_blacklist_data();
+    let _ = update_blacklist_data();
     let mut system_processes = SystemProcesses::new();
 
     loop {
@@ -85,7 +84,7 @@ pub async unsafe fn watch_active_window() {
         match active_window(&mut system_processes) {
             Some(current_process) => {
                 let blacklist = get_blacklist_instance(); // 2µs 
-                let mut blacklist = blacklist.lock();
+                let blacklist = blacklist.lock();
         
                 if let Some(blacklisted) = blacklist
                     .iter()
@@ -107,7 +106,7 @@ pub static BLACKILST: OnceLock<Arc<Mutex<Vec<BlacklistItem>>>> = OnceLock::new()
 
 fn is_blacklist_empty() -> bool {
     let blacklist = get_blacklist_instance();
-    let mut blacklist = blacklist.lock();
+    let blacklist = blacklist.lock();
     blacklist.is_empty()
 }
 
@@ -131,7 +130,7 @@ pub fn update_blacklist_data() -> Result<(), String> {
             set_blacklist_data(data);
             Ok(())
         }
-        Err(e) => {
+        Err(_) => {
             eprintln!("Failed to read JSON: {}", FILENAME_APPS_BLACKLIST);
             Ok(())
         }
