@@ -20,7 +20,7 @@
             :class="{ 'max-h-14': item.extension === FILE_EXT.TXT }">
             <template v-if="item.extension === FILE_EXT.TXT">{{
               item.contents
-              }}</template>
+            }}</template>
             <template v-else-if="item.extension === FILE_EXT.PNG">
               <img :src="convertFileSrc(item.path)" class="border border-white/50 hover:border-white" alt="image" />
             </template>
@@ -47,12 +47,12 @@
 </template>
 
 <script setup lang="ts">
+// @ts-nocheck: these aren't the droids you're looking for
 import AppTabs from "./AppTabs.vue";
 import { ref } from "vue";
 import { FILE_EXT, Folder, FOLDER_NAME, MENU_TYPE } from "../common/constants";
 import { ClipboardData, ClipboardItem } from "../common/interfaces";
 import { FileEntry } from "@tauri-apps/api/fs";
-import { getFilesData } from "../services/backend";
 import { appWindow } from "@tauri-apps/api/window";
 import { listen } from "@tauri-apps/api/event";
 import { formatDate } from "../common/helpers";

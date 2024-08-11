@@ -100,16 +100,18 @@ const save = async () => {
     }
 }
 
-
-
 const getProccessList = async () => {
     try {
         const response = await invoke('get_proccesses_list');
         const data = JSON.parse(response)
 
-        data.sort((a, b) => {
-            if (a.filename < b.filename) return -1;
-            if (a.filename > b.filename) return 1;
+        data.sort((a: AppItem, b: AppItem) => {
+            if (!a?.filename || !b?.filename) {
+                return;
+            }
+
+            if (a?.filename < b?.filename) return -1;
+            if (a?.filename > b?.filename) return 1;
             return 0;
         });
 

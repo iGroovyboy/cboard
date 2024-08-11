@@ -26,14 +26,14 @@ const bootUp = async () => {
   document.addEventListener("contextmenu", (event) => event.preventDefault());
 
   appWindow.onMoved(
-    debounce(({ payload: position }) => {
+    debounce(({ payload: position }: { payload: LogicalPosition }) => {
       console.log("Window moved to:", position);
       ls.save(SETTINGS_KEY.WINDOW_POS, position);
     }, 500),
   );
 
   appWindow.onResized(
-    debounce(({ payload: size }) => {
+    debounce(({ payload: size }: { payload: LogicalSize }) => {
       console.log("Window resized:", size);
       ls.save(SETTINGS_KEY.WINDOW_SIZE, size);
     }, 500),

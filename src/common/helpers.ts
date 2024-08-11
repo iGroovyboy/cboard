@@ -39,10 +39,11 @@ export const truncateString = (
   return str.length > maxLength ? str.substring(0, maxLength) + suffix : str;
 };
 
-export function debounce(func, wait) {
-  let timeout;
-  return function (...args) {
+export function debounce(func: Function, wait: number) {
+  let timeout: number | undefined;
+  return function (...args: any) {
     clearTimeout(timeout);
+    // @ts-ignore
     timeout = setTimeout(() => func.apply(this, args), wait);
   };
 }

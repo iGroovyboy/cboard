@@ -28,12 +28,15 @@ interface AppReplRowProps {
 }
 
 const props = withDefaults(defineProps<AppReplRowProps>(), {
-  data: {
-    key: "",
-    value: "",
+  data: () => {
+    return {
+      key: "",
+      value: "",
+    };
   },
   isConstructor: false,
 });
+
 
 const emit = defineEmits(["add", "remove", "update"]);
 

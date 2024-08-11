@@ -19,7 +19,7 @@ export const MENU_TYPE = {
   Main: 2,
 };
 
-export const FOLDER_NAME_MAP = {
+export const FOLDER_NAME_MAP: Record<number, string> = {
   0: FOLDER_NAME.Clipboard,
   1: FOLDER_NAME.Favorites,
 };
