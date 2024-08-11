@@ -1,5 +1,5 @@
 <template>
-  <button class="m-2 p-1 px-4 border" :class="colors" v-text="text" />
+  <button class="m-2 p-1 px-4 border text-sm" :class="colors" v-text="text" />
 </template>
 
 <script setup lang="ts">

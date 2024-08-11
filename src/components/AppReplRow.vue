@@ -1,33 +1,17 @@
 <template>
   <div class="flex gap-0.5 mb-0.5 w-full">
-    <input
-      type="text"
-      class="bg-white/10 outline-0 w-[47%] text-emerald-500 font-bold px-2 py-1 border border-transparent focus:border-sky-500"
-      maxlength="256"
-      v-model="key"
-      @input="update"
-    />
-    <input
-      type="text"
-      class="bg-white/10 outline-0 w-[47%] text-white px-2 py-1 border border-transparent focus:border-sky-500"
-      v-model="value"
-      @keyup="handleKeyPress"
-      @input="update"
-    />
+    <input type="text" class="text-sm font-bold bg-white/10 px-2 py-1 outline-0 w-[47%] 
+      text-green-500 border border-transparent focus:border-green-500 focus:bg-green-300/30 focus:text-white"
+      maxlength="256" v-model="key" @input="update" />
+    <input type="text"
+      class="text-sm bg-white/10 outline-0 w-[47%] text-white px-2 py-1 border border-transparent focus:border-white/60"
+      v-model="value" @keyup="handleKeyPress" @input="update" />
     <div class="w-5 flex justify-center items-center">
       <button v-if="isConstructor" @click="add">
-        <img
-          class="w-5 opacity-50 rotate-45 hover:opacity-100"
-          src="../assets/close-outline.svg"
-          alt="Add"
-        />
+        <img class="w-5 opacity-50 rotate-45 hover:opacity-100" src="../assets/close-outline.svg" alt="Add" />
       </button>
       <button v-else @click="$emit('remove', key)">
-        <img
-          class="w-5 opacity-50 hover:opacity-100"
-          src="../assets/close-outline.svg"
-          alt="Delete"
-        />
+        <img class="w-5 opacity-50 hover:opacity-100" src="../assets/close-outline.svg" alt="Delete" />
       </button>
     </div>
   </div>
@@ -71,8 +55,8 @@ const handleKeyPress = (e: KeyboardEvent) => {
 };
 
 const update = debounce(() => {
-  emit("update", 
-    props.data.key, 
+  emit("update",
+    props.data.key,
     { key: key.value, value: value.value }
   );
 }, 1000);

@@ -3,6 +3,8 @@
 @tailwind utilities;
 
 :root {
+  --main-bg-color: #242424;
+
   font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
   font-size: 16px;
   line-height: 24px;
@@ -10,7 +12,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: var(--main-bg-color);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -21,7 +23,7 @@
 
 html {
   user-select: none;
-  background-color: #242424;
+  background-color: var(--main-bg-color);
 }
 
 body {

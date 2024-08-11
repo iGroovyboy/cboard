@@ -1,13 +1,14 @@
 <template>
     <app-headerbar title="Blacklist applications" />
 
-    <div v-if="!isProcessesVisible" class="blacklisted-apps flex flex-col overflow-y-scroll">
-        <div class="apps pb-16">
+    <div v-if="!isProcessesVisible" class="blacklisted-apps flex flex-col overflow-y-scroll flex-grow pb-16">
+        <div class="apps pt-0.5 overflow-x-hidden flex flex-col flex-grow">
             <div v-for="(item, i) in blacklistedApps" :key="i" @mousedown="selectedItemId = i"
-                class="item flex gap-x-2 px-1 mb-0.5 items-center leading-5"
+                class="item flex gap-x-2 px-1 mb-1 items-center leading-5"
                 :class="{ 'bg-sky-600 text-white': selectedItemId == i }">
-                <input class="h-4 w-4" type="checkbox" v-model="item.enabled" @change="toggleApp(item)">
-                <span v-text="item.title || item.filename" />
+                <input class="min-h-4 min-w-4" type="checkbox" v-model="item.enabled" @change="toggleApp(item)">
+                <span v-text="item.title || item.filename" :title="item.title || item.filename"
+                    class="text-sm text-nowrap" :class="{ 'text-white/40': !item.enabled }" />
             </div>
         </div>
         <div class="controls fixed bottom-0 left-0 z-10 border border-white/10 bg-neutral-800 w-full">
@@ -16,37 +17,43 @@
         </div>
     </div>
 
-    <div v-else class="process-list">
+    <div v-else class="process-list flex flex-col overflow-hidden">
         <div class="row flex justify-between items-center">
-            <span class="m-2">Select from the list of running apps:</span>
+            <span class="m-2 text-sm">Select from the list of running apps:</span>
             <app-btn text="Refresh" @click="getProccessList" />
         </div>
-        <div class="apps relative flex flex-col m-2 border border-white/50 bg-white/60 h-64 overflow-y-scroll">
-            <div class="header bg-neutral-600 flex sticky top-0">
-                <div class="w-1/2 pl-1 border-b border-white/50">Process name</div>
-                <div class="w-1/2 pl-1 border-b border-l border-white/50">Title</div>
+        <div class="relative flex flex-col m-2 border border-white/20 h-64 overflow-y-scroll">
+            <div class="header flex sticky top-0 bg-[var(--main-bg-color)]">
+                <div class="text-sm text-white/40 w-1/2 pl-1 py-1">Process name</div>
+                <div class="text-sm text-white/40 w-1/2 pl-1 py-1">Title</div>
             </div>
 
-            <div v-for="(item, i) in processes" :key="i" @click="selectProcess(i)" class="item pl-1 flex text-black"
-                :class="{ 'bg-sky-600 text-white': selectedProcessId === i }">
-                <span class="w-1/2 text-sm overflow-hidden pr-2" v-text="item.filename" />
-                <span class="w-1/2 text-sm overflow-hidden" v-text="item.title" />
+            <div v-for="(item, i) in processes" :key="i" @click="selectProcess(i)"
+                class="item pl-1 py-1 flex b-2 odd:bg-white/5"
+                :class="{ 'bg-sky-600 odd:bg-sky-600 text-white': selectedProcessId === i }">
+                <span class="w-1/2 text-xs text-sky-500 overflow-hidden text-nowrap pr-2"
+                    :class="{ 'text-white': selectedProcessId === i }" v-text="item.filename" />
+                <span class="w-1/2 text-xs overflow-hidden text-nowrap" v-text="item.title" />
             </div>
         </div>
         <div class="controls m-2">
-            <p>Or type in/browse to the app executable (.exe) file</p>
+            <p class="text-sm">Or type in/browse to the app executable (.exe) file</p>
             <div class="w-full flex items-center">
-                <div class="min-w-[100px]">Process</div>
-                <input type="text" class="h-8 flex-grow" v-model="selectedProcessData.filename">
+                <div class="min-w-[80px] text-sm">Process</div>
+                <input type="text"
+                    class="h-8 flex-grow px-1 text-sm outline-0 border border-transparent text-sky-500 focus:border-sky-500 focus:bg-sky-300/30 focus:text-white"
+                    v-model="selectedProcessData.filename">
                 <app-btn text="..." @click="browse" />
             </div>
             <div class="w-full flex items-center">
-                <div class="min-w-[100px]">Title</div>
-                <input type="text" class="flex w-full h-8 mr-2" :value="selectedProcessData.title">
+                <div class="min-w-[80px] text-sm">Title</div>
+                <input type="text"
+                    class="flex w-full h-8 mr-2 px-1 text-sm outline-0 border border-transparent focus:border-sky-500 focus:bg-sky-300/30 focus:text-white"
+                    :value="selectedProcessData.title">
             </div>
-            <div class="row flex justify-end mt-4">
+            <div class="row flex justify-end mt-2">
                 <app-btn text="OK" @click="addToBlacklist" />
-                <app-btn text="Cancel" @click="isProcessesVisible = false" />
+                <app-btn text="Cancel" @click="isProcessesVisible = false; resetSelected();" />
             </div>
         </div>
     </div>
@@ -55,7 +62,7 @@
 <script setup lang="ts">
 import AppHeaderbar from "./AppHeaderbar.vue";
 import AppBtn from "./AppBtn.vue";
-import { nextTick, onBeforeMount, onMounted, reactive, ref } from "vue";
+import { nextTick, onBeforeMount, onMounted, onUnmounted, reactive, ref } from "vue";
 import { AppItem } from "../common/interfaces";
 import { platform } from "@tauri-apps/api/os";
 import { open } from '@tauri-apps/api/dialog';
@@ -92,12 +99,23 @@ const save = async () => {
     }
 }
 
+
+
 const getProccessList = async () => {
     try {
         const response = await invoke('get_proccesses_list');
-        processes.value = JSON.parse(response)
+        const data = JSON.parse(response)
+
+        data.sort((a, b) => {
+            if (a.filename < b.filename) return -1;
+            if (a.filename > b.filename) return 1;
+            return 0;
+        });
+
+        processes.value = data;
 
         await appWindow.setFocus();
+        resetSelected();
     } catch (error) {
         console.error(error);
     }
@@ -121,6 +139,8 @@ const remove = () => {
 
 // -----
 
+const resetSelected = () => { selectedProcessId.value = null }
+
 const selectProcess = (i: number) => {
     selectedProcessId.value = i;
 
@@ -133,6 +153,7 @@ const selectProcess = (i: number) => {
 }
 
 const browse = async () => {
+    resetSelected();
     const currentPlatform = await platform();
     console.log(currentPlatform);
 
@@ -174,6 +195,7 @@ const addToBlacklist = () => {
     save();
 
     isProcessesVisible.value = false;
+    resetSelected();
 }
 
 const loadData = async () => {

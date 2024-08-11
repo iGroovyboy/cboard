@@ -13,6 +13,7 @@ use tokio::time::{sleep, Duration};
 use crate::filesys::{read_json_data, FILENAME_APPS_BLACKLIST};
 use parking_lot::Mutex;
 
+/// Used throughout the app to check if app is currently enabled
 static IS_APP_ACTIVE: AtomicBool = AtomicBool::new(true);
 
 pub fn app_active_state() -> bool {
