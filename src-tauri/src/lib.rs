@@ -10,3 +10,4 @@ pub mod win_key_hook;
 pub mod hotkeys_reader;
 pub mod settings;
 pub mod common;
+pub mod autorun;
