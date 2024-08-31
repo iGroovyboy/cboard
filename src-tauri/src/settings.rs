@@ -1,25 +1,55 @@
 use std::sync::{Arc, OnceLock};
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer};
 use crate::{autorun::autorun, filesys::{read_json_data, FILENAME_SETTINGS}};
 use parking_lot::Mutex;
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize)]
 pub struct Settings {
-    autorun: bool,
-    win_key: String,
-    win_key_hotkey: String,
-    show_app_hotkey: String,
+    pub autorun: bool,
+    pub win_key: WinKeySetting,
+    pub win_key_hotkey: String,
+    pub show_app_hotkey: String,
 }
 
 pub static SETTINGS: OnceLock<Arc<Mutex<Settings>>> = OnceLock::new();
 
-fn get_settings_instance() -> Arc<parking_lot::Mutex<Settings>> {
+#[derive(Debug, Copy, Clone)]
+pub enum WinKeySetting {
+    Normal = 0,
+    DisableInFullscreen = 1,
+    Hotkey = 2,
+}
+
+impl TryFrom<i8> for WinKeySetting {
+    type Error = &'static str;
+
+    fn try_from(value: i8) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(WinKeySetting::Normal),
+            1 => Ok(WinKeySetting::DisableInFullscreen),
+            2 => Ok(WinKeySetting::Hotkey),
+            _ => Err("Invalid value for WinKeySetting"),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for WinKeySetting {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = i8::deserialize(deserializer)?;
+        WinKeySetting::try_from(value).map_err(serde::de::Error::custom)
+    }
+}
+
+pub fn get_settings_instance() -> Arc<parking_lot::Mutex<Settings>> {
     SETTINGS.get_or_init(|| {
         Arc::new(parking_lot::Mutex::new(
         Settings { 
                 autorun: false, 
-                win_key: "0".to_string(), 
+                win_key: WinKeySetting::Normal, 
                 win_key_hotkey: "".to_string(), 
                 show_app_hotkey: "LControl,Key1".to_string(), 
             }))

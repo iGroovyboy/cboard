@@ -16,17 +16,17 @@
       <h2>Windows key</h2>
       <div class="options flex flex-col gap-y-1">
         <div class="option">
-          <input name="win_key" id="win_key_normal" type="radio" value="0" v-model="settings.win_key">
+          <input name="win_key" id="win_key_normal" type="radio" :value="0" v-model="settings.win_key">
           <label for="win_key_normal">Normal behaviour</label>
         </div>
 
         <div class="option">
-          <input name="win_key" id="win_key_fullscreen" type="radio" value="1" v-model="settings.win_key">
+          <input name="win_key" id="win_key_fullscreen" type="radio" :value="1" v-model="settings.win_key">
           <label for="win_key_fullscreen">Disable in fullscreen mode</label>
         </div>
 
         <div class="option">
-          <input name="win_key" id="win_key_hotkeys" type="radio" value="2" v-model="settings.win_key">
+          <input name="win_key" id="win_key_hotkeys" type="radio" :value="2" v-model="settings.win_key">
           <label for="win_key_hotkeys">Replace with hotkeys</label>
           <input class="hotkeys" @click="showHotkey('win_key_hotkey')" id="win_key_hotkeys_data" type="text" readonly
             :value="displayHotkeys(settings.win_key_hotkey)">
@@ -88,7 +88,7 @@ const isWin = ref(true);
 const settings = reactive<Record<string, unknown>>({
   autorun: true,
 
-  win_key: '0',
+  win_key: 0,
   win_key_hotkey: '',
 
   show_app_hotkey: 'Ctrl + 1',
