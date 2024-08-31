@@ -3,10 +3,10 @@ use std::sync::{Arc, OnceLock};
 use std::{thread, time};
 use std::fs::File;
 use std::io::BufReader;
-use serde::Deserialize;
 use rdev::{Event, EventType, Key as inKey, listen};
 use enigo::{Enigo, Settings, Key as outKey, Keyboard};
 use enigo::Direction::{Press, Release};
+use crate::common::KeyValue;
 use crate::filesys::{FILENAME_AUTO_REPLACEMENT};
 use crate::helpers::{get_tauri_handle};
 use crate::keyboard_layouts::get_current_keyboard_layout;
@@ -31,12 +31,6 @@ impl Default for KeyLog {
             keys: Vec::new()
         }
     }
-}
-
-#[derive(Deserialize, Debug)]
-pub struct KeyValue {
-    key: String,
-    value: String,
 }
 
 /// Holds only letters
@@ -190,7 +184,6 @@ fn save_auto_replacement_log(key: &inKey, event: Event) {
             event,
         });
 
-    println!("====BUF> {:#?}", auto_repl_buffer_string().unwrap());
     handle_auto_replacement();
 }
 

@@ -1,3 +1,5 @@
+import { OsType, type } from "@tauri-apps/api/os";
+
 export const formatDate = (timestamp: string) => {
   var date = new Date(parseInt(timestamp));
   var hours = date.getHours();

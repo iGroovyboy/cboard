@@ -1,21 +1,35 @@
 <template>
-  <div v-if="type" class="menu-wrapper absolute top-0 w-full h-full z-100" @click="$emit('close')">
+  <div
+    v-if="type"
+    class="menu-wrapper absolute top-0 w-full h-full z-100"
+    @click="$emit('close')"
+  >
     <ul v-if="type === MENU_TYPE.Context" class="menu">
       <li @click="action(ACTION.DeleteAll)">Delete all</li>
     </ul>
 
     <ul v-else-if="type === MENU_TYPE.Main" class="menu main">
       <li class="flex">
-        <router-link :to="{ name: ROUTE.Autoreplace }"
-          class="text-white w-full hover:text-white cursor-default">Auto-replacement</router-link>
+        <router-link
+          :to="{ name: ROUTE.Autoreplace }"
+          class="text-white w-full hover:text-white cursor-default"
+          >Auto-replacement</router-link
+        >
       </li>
       <li class="flex">
-        <router-link :to="{ name: ROUTE.Blacklist }" class="text-white w-full hover:text-white cursor-default">Blacklist
-          apps</router-link>
+        <router-link
+          :to="{ name: ROUTE.Blacklist }"
+          class="text-white w-full hover:text-white cursor-default"
+          >Blacklist apps</router-link
+        >
       </li>
-      <!-- <li>
-        <router-link :to="{ name: ROUTE.Settings }" class="text-white w-full hover:text-white">Settings</router-link>
-      </li> -->
+      <li class="flex">
+        <router-link
+          :to="{ name: ROUTE.Settings }"
+          class="text-white w-full hover:text-white"
+          >Settings</router-link
+        >
+      </li>
       <li @click="action(ACTION.About)">About</li>
       <li @click="action(ACTION.Quit)">Quit</li>
     </ul>

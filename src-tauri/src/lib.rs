@@ -6,3 +6,7 @@ pub mod keyboard_layouts;
 pub mod auto_replacement;
 pub mod clipboard;
 pub mod processes;
+pub mod win_key_hook;
+pub mod hotkeys_reader;
+pub mod settings;
+pub mod common;

@@ -13,6 +13,7 @@ Platform: Windows only
 
 ## Future Plans
 
+- App profiles to allow only specific keyboard layouts for specific apps
 - Keyboard Layout Switching: automatic and manual switching of typed text/symbols to the correct keyboard layout.
 - MacOS/Linux support.
 

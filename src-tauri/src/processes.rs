@@ -5,11 +5,13 @@ use std::sync::{Arc, OnceLock};
 use serde::{Deserialize, Serialize};
 use sysinfo::{Pid, RefreshKind, System};
 use winapi::shared::minwindef::{BOOL, LPARAM};
-use winapi::shared::windef::HWND;
-use winapi::um::winuser::{EnumWindows, GetForegroundWindow, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible};
+use winapi::shared::windef::{HWND, RECT};
+use winapi::um::winuser::{EnumWindows, GetDesktopWindow, GetForegroundWindow, GetShellWindow, GetSystemMetrics, GetWindowRect, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible, SM_CXSCREEN, SM_CYSCREEN};
 use tokio::time::{sleep, Duration};
 use crate::filesys::{read_json_data, FILENAME_APPS_BLACKLIST};
 use parking_lot::Mutex;
+
+// TODO: refactor to use interface-like implementation to have same pub funcs for other os
 
 /// Used throughout the app to check if app is currently enabled
 static IS_APP_ACTIVE: AtomicBool = AtomicBool::new(true);
@@ -20,6 +22,17 @@ pub fn app_active_state() -> bool {
 
 pub fn set_app_active_state(state: bool) {
     IS_APP_ACTIVE.store(state, Ordering::Relaxed); // 200 ns
+}
+
+/// Used throughout the app to check if app is fullscreen
+static IS_FULLSCREEN: AtomicBool = AtomicBool::new(true);
+
+pub fn is_fg_window_fullscreen() -> bool {
+    IS_FULLSCREEN.load(Ordering::Relaxed)
+}
+
+pub fn set_is_fg_window_fullscreen(state: bool) {
+    IS_FULLSCREEN.store(state, Ordering::Relaxed);
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -80,12 +93,12 @@ pub async unsafe fn watch_active_window() {
             continue;
         }
 
-        // let current_process = active_window(&mut system_processes);
-        match active_window(&mut system_processes) {
+        let hwnd = GetForegroundWindow();
+        match active_window(&mut system_processes, Some(hwnd)) {
             Some(current_process) => {
                 let blacklist = get_blacklist_instance(); // 2µs 
                 let blacklist = blacklist.lock();
-        
+
                 if let Some(blacklisted) = blacklist
                     .iter()
                     .find(|bl| bl.filepath == current_process.filepath ) {
@@ -96,10 +109,32 @@ pub async unsafe fn watch_active_window() {
                 } else {
                     set_app_active_state(true);
                 }
+
+                handle_full_screen_app(hwnd, current_process);
             },
             None => {},
         }
     }
+}
+
+unsafe fn handle_full_screen_app(hwnd: HWND, process: MyProcess) {
+    if !cfg!(target_os = "windows") {
+        return;
+    } 
+
+    if process.filename == "explorer.exe" {
+        return;
+    }
+
+    match { is_fullscreen(hwnd) } {
+        true => {
+            println!("Fullscreen app found: {:?}", window_text(hwnd));
+            set_is_fg_window_fullscreen(true);
+        },
+        _ => {
+            set_is_fg_window_fullscreen(false);
+        }
+    };
 }
 
 pub static BLACKILST: OnceLock<Arc<Mutex<Vec<BlacklistItem>>>> = OnceLock::new();
@@ -137,8 +172,8 @@ pub fn update_blacklist_data() -> Result<(), String> {
     }
 }
 
-pub unsafe fn active_window(system_processes: &mut SystemProcesses) -> Option<MyProcess> {
-    let hwnd = GetForegroundWindow();
+pub unsafe fn active_window(system_processes: &mut SystemProcesses, window: Option<HWND>) -> Option<MyProcess> {
+    let hwnd = window.unwrap_or(GetForegroundWindow());
 
     let mut pid: u32 = 0;
     GetWindowThreadProcessId(hwnd, &mut pid);
@@ -207,4 +242,34 @@ fn foreground_apps() -> HashSet<(u32, String)> {
     }
 
     foreground_apps
+}
+
+#[cfg(target_os = "windows")]
+pub unsafe fn is_fullscreen(hwnd: HWND) -> bool {
+    let desktop_window = GetDesktopWindow();
+    let shell_window = GetShellWindow();
+    if hwnd.is_null() || hwnd == shell_window || hwnd == desktop_window {
+        return false;
+    }
+
+    let mut rect: RECT = RECT {
+        left: 0,
+        top: 0,
+        right: 0,
+        bottom: 0,
+    };
+
+    if GetWindowRect(hwnd, &mut rect) == 0 {
+        return false;
+    }
+
+    let screen_width = GetSystemMetrics(SM_CXSCREEN);
+    let screen_height = GetSystemMetrics(SM_CYSCREEN);
+
+    rect.right - rect.left == screen_width && rect.bottom - rect.top == screen_height
+}
+
+#[cfg(not(target_os = "windows"))]
+pub fn is_fullscreen() -> bool {
+    false
 }

@@ -6,7 +6,7 @@
 use std::thread;
 use tauri::{Manager};
 use app::helpers::APP_HANDLE;
-use app::{auto_replacement, filesys, tray, window, clipboard as my_clipboard, processes};
+use app::{auto_replacement, clipboard as my_clipboard, filesys, hotkeys_reader, processes, settings, tray, win_key_hook, window};
 
 fn main() {
     tauri::Builder::default()
@@ -30,6 +30,12 @@ fn main() {
                 rt.block_on(processes::watch_active_window());
             });
 
+            thread::spawn(|| unsafe {
+                let rt = tokio::runtime::Runtime::new().unwrap();
+                rt.block_on(win_key_hook::win_key_hook());
+            });
+
+
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -44,7 +50,10 @@ fn main() {
             my_clipboard::paste,
             auto_replacement::update_auto_replace_data,
             processes::get_proccesses_list,
-            processes::update_blacklist_data
+            processes::update_blacklist_data,
+            hotkeys_reader::hotkeys_listen,
+            hotkeys_reader::hotkeys_unlisten,
+            settings::update_settings,
         ])
         .system_tray(tray::make_tray())
         .on_system_tray_event(tray::handle_tray_events)
