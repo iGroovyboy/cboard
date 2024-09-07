@@ -4,14 +4,14 @@ use tauri::Manager;
 
 use crate::helpers::get_tauri_handle;
 
-static IS_HOTEKEYS_READER_ON: AtomicBool = AtomicBool::new(true);
+static IS_HOTKEYS_READER_ON: AtomicBool = AtomicBool::new(true);
 
 pub fn hotkey_reader_on() -> bool {
-    IS_HOTEKEYS_READER_ON.load(Ordering::Relaxed)
+    IS_HOTKEYS_READER_ON.load(Ordering::Relaxed)
 }
 
 pub fn set_hotkey_reader_on(state: bool) {
-    IS_HOTEKEYS_READER_ON.store(state, Ordering::Relaxed);
+    IS_HOTKEYS_READER_ON.store(state, Ordering::Relaxed);
 }
 
 #[derive(Clone, serde::Serialize)]

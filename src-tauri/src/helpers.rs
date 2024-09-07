@@ -1,6 +1,10 @@
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
+use serde::Serialize;
 use tauri::AppHandle;
+
+#[derive(Clone, Serialize)]
+pub struct EmptyPayload;
 
 pub static APP_HANDLE: OnceLock<AppHandle> = OnceLock::new();
 

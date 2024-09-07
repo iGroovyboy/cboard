@@ -49,12 +49,6 @@ const bootUp = async () => {
   //   await appWindow.setSize(new LogicalSize(size.width, size.height));
   // }
 
-  // TODO: make customizable
-  await register("CommandOrControl+1", () => {
-    console.log("Shortcut triggered");
-    invoke("show_window");
-  });
-
   await appWindow.setAlwaysOnTop(true);
 
   invoke("enable_clipboard");

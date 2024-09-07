@@ -11,3 +11,4 @@ pub mod hotkeys_reader;
 pub mod settings;
 pub mod common;
 pub mod autorun;
+pub mod hotkeys_listener;

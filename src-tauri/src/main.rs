@@ -6,7 +6,7 @@
 use std::thread;
 use tauri::{Manager};
 use app::helpers::APP_HANDLE;
-use app::{auto_replacement, clipboard as my_clipboard, filesys, hotkeys_reader, processes, settings, tray, win_key_hook, window};
+use app::{auto_replacement, clipboard as my_clipboard, filesys, hotkeys_listener, hotkeys_reader, processes, settings, tray, win_key_hook, window};
 
 fn main() {
     tauri::Builder::default()
@@ -23,6 +23,10 @@ fn main() {
                 .set(handle)
                 .unwrap_or_else(|_| panic!("AppHandle is already set"));
 
+            let _ = app.listen_global("settings-updated", |event| {
+                println!(" ---- got event-name with payload {:?}", event.payload());
+            });
+
             auto_replacement::enable_key_listener();
 
             thread::spawn(|| unsafe {
@@ -34,7 +38,6 @@ fn main() {
                 let rt = tokio::runtime::Runtime::new().unwrap();
                 rt.block_on(win_key_hook::win_key_hook());
             });
-
 
             Ok(())
         })

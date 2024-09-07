@@ -1,10 +1,11 @@
 use std::sync::{Arc, OnceLock};
 use serde::{Deserialize, Deserializer};
-use crate::{autorun::autorun, filesys::{read_json_data, FILENAME_SETTINGS}};
+use crate::{autorun::autorun, filesys::{read_json_data, FILENAME_SETTINGS}, helpers::{get_tauri_handle, EmptyPayload}, hotkeys_listener};
 use parking_lot::Mutex;
+use tauri::Manager;
 
 #[allow(dead_code)]
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct Settings {
     pub autorun: bool,
     pub win_key: WinKeySetting,
@@ -56,21 +57,26 @@ pub fn get_settings_instance() -> Arc<parking_lot::Mutex<Settings>> {
     }).clone()
 }
 
-fn set_settings(new_data: Settings) {
+fn set_settings(new_data: Settings) -> Settings {
     let settings = get_settings_instance();
     let mut settings = settings.lock();
+    *settings = new_data.clone();
 
-    autorun(new_data.autorun);
-
-    *settings = new_data;
+    new_data
 }
 
+// TODO: create global event
 #[allow(dead_code)]
 #[tauri::command]
 pub fn update_settings() -> Result<(), String> {
     match read_json_data::<Settings>(FILENAME_SETTINGS) {
         Ok(data) => {
-            set_settings(data);
+            let settings = set_settings(data);
+            
+            // TODO: move out to global event listener
+            autorun(settings.autorun);
+            hotkeys_listener::run();
+
             Ok(())
         }
         Err(_) => {
