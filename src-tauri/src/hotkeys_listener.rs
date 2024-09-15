@@ -1,11 +1,33 @@
 use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, OnceLock};
 use std::thread;
 use device_query::{DeviceQuery, DeviceState, Keycode};
+use parking_lot::Mutex;
 
 use crate::{window};
 use crate::settings::get_settings_instance;
 
+static HOTKEYS_LISTENER: OnceLock<Arc<Mutex<HotkeysListener>>> = OnceLock::new();
+
+static IS_HOTKEYS_LISTENER: AtomicBool = AtomicBool::new(true);
+
+pub fn hotkey_listener() -> bool {
+    IS_HOTKEYS_LISTENER.load(Ordering::Relaxed)
+}
+
+pub fn set_hotkey_listener(state: bool) {
+    IS_HOTKEYS_LISTENER.store(state, Ordering::Relaxed);
+}
+
+pub fn get_hotkeys_listener_instance() -> Arc<parking_lot::Mutex<HotkeysListener>> {
+    HOTKEYS_LISTENER.get_or_init(|| {
+        Arc::new(parking_lot::Mutex::new(
+            HotkeysListener::new()
+        ))
+            
+    }).clone()
+}
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct Hotkeys {
@@ -22,89 +44,99 @@ impl Hotkeys {
     }
 }
 
-type Callback<F> = Arc<Mutex<F>>;
+type Callback = Box<dyn Fn() + Send + Sync>;
 
-pub struct HotkeysListener<F> 
-where
-    F: FnMut() + Send + 'static,
-{
-    subscribers: Arc<Mutex<HashMap<Hotkeys, Callback<F>>>>,
+pub struct HotkeysListener {
+    subscribers: HashMap<Hotkeys, Callback>,
 }
 
-impl<F> HotkeysListener<F> 
-where
-    F: FnMut() + Send + 'static,
-{
+impl HotkeysListener {
     pub fn new() -> Self {
         HotkeysListener {
-            subscribers: Arc::new(Mutex::new(HashMap::new())),
+            subscribers: HashMap::new(),
         }
     }
 
-    pub fn subscribe(&mut self, hotkey: Hotkeys, callback: F)
-    where
-        F: Fn() + Send + 'static,
-    {
-        let mut subs = self.subscribers.lock().unwrap();
-        subs.insert(hotkey, Arc::new(Mutex::new(callback)));
+    pub fn subscribe(&mut self, hotkey: Hotkeys, callback: Callback) {
+        self.subscribers.insert(hotkey, callback);
     }
 
     pub fn unsubscribe(&mut self, hotkey: Hotkeys) {
-        let mut subs = self.subscribers.lock().unwrap();
-        subs.remove(&hotkey);
+        self.subscribers.remove(&hotkey);
     }
 
-    pub fn listen(&self) {
-        let subscribers = Arc::clone(&self.subscribers);
-        
-        thread::spawn(move || {
-            let device_state = DeviceState::new();
-            let mut prev_keys: Vec<Keycode> = vec![];
-
-            loop {
-                let keys: Vec<Keycode> = device_state.get_keys();
-
-                if keys.is_empty() || keys == prev_keys  {
-                    continue;
-                }
-
-                let subs = subscribers.lock().unwrap();
-                for (hotkey, callback) in subs.iter() {
-                    if hotkey.is_pressed(&keys) {
-                        let mut cb = callback.lock().unwrap();
-                        cb();
-                    }
-
-                }
-
-                prev_keys = keys;
-            }
-        });
+    pub fn clear(&mut self, hotkey: Hotkeys) {
+        self.subscribers.clear();
     }
 }
 
-// TODO: when user changes settings - must be unsubbed and restarted
+fn listen() {
+    println!("listener started");
+
+    thread::spawn(|| {
+        let hotkeys_listener = get_hotkeys_listener_instance();
+        let mut hotkeys_listener = hotkeys_listener.lock();
+
+        let device_state = DeviceState::new();
+        let mut prev_keys: Vec<Keycode> = vec![];
+
+        set_hotkey_listener(true);
+
+        loop {
+            if !hotkey_listener() {
+                println!("buy buy");
+                return;
+            }
+
+            let keys: Vec<Keycode> = device_state.get_keys();
+
+            if keys.is_empty() || keys == prev_keys  {
+                continue;
+            }
+
+            for (hotkey, callback) in hotkeys_listener.subscribers.iter() {
+                if hotkey.is_pressed(&keys) {
+                    callback();
+                }
+
+            }
+
+            prev_keys = keys;
+        }
+    });
+}
+
 pub fn run() {
-    let mut hotkey_listener = HotkeysListener::new();
+    set_hotkey_listener(false);
+    // TODO: add channel message?
+    
+    println!("222.1");
+    let hotkeys_listener = get_hotkeys_listener_instance();
+    
+    println!("222.2");
+    let mut hotkeys_listener = hotkeys_listener.lock();
+
+    println!("333");
+
+    hotkeys_listener.subscribers.clear();
 
     let settings = get_settings_instance();
     let settings = settings.lock();
 
     println!(">>> {:#?}", settings.clone());
-
     match parse_keycodes(settings.show_app_hotkey.clone()) {
         Ok(hotkeys) => {
-            hotkey_listener.subscribe(
+            hotkeys_listener.subscribe(
                 Hotkeys::new(hotkeys),
-                move || {
+                Box::new(|| {
                     window::show_window();
-                },
+                }),
             );
         },
         Err(err) => println!("Error parsing hotkeys: {}", err),
     }
-
-    hotkey_listener.listen();
+    
+    listen();
 }
 
 pub fn parse_keycodes(input: String) -> Result<Vec<Keycode>, String> {
