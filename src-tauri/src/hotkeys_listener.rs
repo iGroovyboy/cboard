@@ -121,10 +121,8 @@ fn listen() {
     });
 }
 
-
 pub fn run() {
-    // TODO: mb replace with tokio task?
-    thread::spawn(|| {
+    let handle = thread::spawn(|| {
         if hotkey_listener() {
             set_hotkey_listener(false);
 
@@ -134,7 +132,6 @@ pub fn run() {
             if !*finished {
                 cvar.wait(&mut finished);
             }
-            println!("Thread received signal.");
         }
         
         let hotkeys_listener = get_hotkeys_listener_instance();
@@ -146,7 +143,6 @@ pub fn run() {
         let settings = get_settings_instance();
         let settings = settings.lock();
 
-        println!(">>> {:#?}", settings.clone());
         match parse_keycodes(settings.show_app_hotkey.clone()) {
             Ok(hotkeys) => {
                 hotkeys_listener.subscribe(
@@ -158,8 +154,9 @@ pub fn run() {
             },
             Err(err) => println!("Error parsing hotkeys: {}", err),
         }
-
     });
+
+    handle.join().unwrap();
 
     listen();
 }
