@@ -94,6 +94,8 @@ fn listen() {
         set_hotkey_listener(true);
 
         loop {
+            thread::sleep(time::Duration::from_millis(10));
+
             if !hotkey_listener() {
                 println!("!hotkey_listener");
                 let mut finished = lock.lock();
@@ -152,7 +154,7 @@ pub fn run() {
                     }),
                 );
             },
-            Err(err) => println!("Error parsing hotkeys: {}", err),
+            Err(err) => println!("Error parsing hotkeys {:#?}: {}", settings.show_app_hotkey, err),
         }
     });
 

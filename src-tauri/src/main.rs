@@ -30,13 +30,11 @@ fn main() {
             auto_replacement::enable_key_listener();
 
             thread::spawn(|| unsafe {
-                let rt = tokio::runtime::Runtime::new().unwrap();
-                rt.block_on(processes::watch_active_window());
+                processes::watch_active_window();
             });
 
             thread::spawn(|| unsafe {
-                let rt = tokio::runtime::Runtime::new().unwrap();
-                rt.block_on(win_key_hook::win_key_hook());
+                win_key_hook::win_key_hook();
             });
 
             Ok(())

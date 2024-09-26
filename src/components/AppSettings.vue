@@ -54,7 +54,7 @@
     class="hotkeys fixed w-full h-full bg-neutral-800 flex flex-col justify-center items-center">
     <div class="w-full p-4">
       <input class="w-full p-2 text-center text-green-500 outline-none border select-none" type="text"
-        placeholder="Press hotkeys" readonly :value="displayHotkeys(recordedHotkeys)">
+        placeholder="Press hotkeys" readonly :value="displayHotkeys(recordedHotkeys)" autocomplete="off">
     </div>
 
     <div class="">
@@ -91,7 +91,7 @@ const settings = reactive<Record<string, unknown>>({
   win_key: 0,
   win_key_hotkey: '',
 
-  show_app_hotkey: 'Ctrl + 1',
+  show_app_hotkey: 'LControl,Key1',
 });
 
 let currentSettingHotkey: null | string = null;

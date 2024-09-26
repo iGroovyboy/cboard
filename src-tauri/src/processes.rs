@@ -1,13 +1,14 @@
+use core::time;
 use std::collections::{HashSet};
 use std::path::{Path};
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
+use std::thread;
 use serde::{Deserialize, Serialize};
 use sysinfo::{Pid, RefreshKind, System};
 use winapi::shared::minwindef::{BOOL, LPARAM};
 use winapi::shared::windef::{HWND, RECT};
 use winapi::um::winuser::{EnumWindows, GetDesktopWindow, GetForegroundWindow, GetShellWindow, GetSystemMetrics, GetWindowRect, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible, SM_CXSCREEN, SM_CYSCREEN};
-use tokio::time::{sleep, Duration};
 use crate::filesys::{read_json_data, FILENAME_APPS_BLACKLIST};
 use parking_lot::Mutex;
 
@@ -83,12 +84,12 @@ impl SystemProcesses {
     }
 }
 
-pub async unsafe fn watch_active_window() {
+pub unsafe fn watch_active_window() {
     let _ = update_blacklist_data();
     let mut system_processes = SystemProcesses::new();
 
     loop {
-        sleep(Duration::from_millis(500)).await;
+        thread::sleep(time::Duration::from_millis(500));
         if is_blacklist_empty() {
             continue;
         }

@@ -59,7 +59,7 @@ unsafe extern "system" fn hook_callback(code: i32, w_param: WPARAM, l_param: LPA
 }
 
 #[allow(dead_code)]
-pub async unsafe fn win_key_hook() {
+pub unsafe fn win_key_hook() {
     let h_instance = GetModuleHandleW(ptr::null());
     let hook = SetWindowsHookExW(WH_KEYBOARD_LL, Some(hook_callback), h_instance, 0);
     let _ = update_settings();
