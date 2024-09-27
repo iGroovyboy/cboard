@@ -3,15 +3,14 @@ use crate::filesys::FILENAME_AUTO_REPLACEMENT;
 use crate::helpers::get_tauri_handle;
 use crate::keyboard_layouts::get_current_keyboard_layout;
 use crate::processes::app_active_state;
-use enigo::Direction::{Press, Release};
-use enigo::{Enigo, Key as outKey, Keyboard, Settings};
 use parking_lot::Mutex;
 use rdev::{listen, Event, EventType, Key as inKey};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::{Arc, OnceLock};
-use std::{thread, time};
+use std::thread;
+use crate::keys::{send_key_times, send_string};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -258,7 +257,7 @@ fn handle_auto_replacement() {
             .name("auto_replacement:send_keys".to_string())
             .spawn(move || {
                 // remove n chars
-                send_key_times(outKey::Backspace, map_key.chars().count() as i32).unwrap();
+                send_key_times(inKey::Backspace, map_key.chars().count() as i32).unwrap();
 
                 send_string(&replacement).unwrap();
             });
@@ -267,37 +266,3 @@ fn handle_auto_replacement() {
     }
 }
 
-// TODO: move to separate mod
-fn send_delayed_keypress(key: outKey, delay_ms: Option<u64>) -> Result<(), String> {
-    let mut enigo = Enigo::new(&Settings::default()).unwrap();
-
-    enigo.key(key, Press).unwrap();
-    if let Some(t) = delay_ms {
-        thread::sleep(time::Duration::from_millis(t))
-    }
-
-    enigo.key(key, Release).unwrap();
-    if let Some(t) = delay_ms {
-        thread::sleep(time::Duration::from_millis(t))
-    }
-
-    Ok(())
-}
-
-// TODO: move to separate mod
-// May send rdev::Unknown struct
-fn send_string(string: &str) -> Result<(), String> {
-    let mut enigo = Enigo::new(&Settings::default()).unwrap();
-    enigo.text(string).unwrap();
-
-    Ok(())
-}
-
-// TODO: move to separate mod
-fn send_key_times(key: outKey, len: i32) -> Result<(), String> {
-    for _ in 0..len {
-        send_delayed_keypress(key, None)?;
-    }
-
-    Ok(())
-}

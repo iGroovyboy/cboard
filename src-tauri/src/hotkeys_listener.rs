@@ -1,11 +1,15 @@
 use core::time;
 use device_query::{DeviceQuery, DeviceState, Keycode};
-use parking_lot::{Condvar, Mutex};
+use parking_lot::{Condvar, Mutex, RawMutex};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::thread;
-
+use std::thread::sleep;
+use std::time::Duration;
+use parking_lot::lock_api::MutexGuard;
+use crate::clipboard::my_clipboard;
+use crate::processes::app_active_state;
 use crate::settings::get_settings_instance;
 use crate::window;
 
@@ -143,28 +147,49 @@ pub fn run() {
 
         hotkeys_listener.subscribers.clear();
 
-        let settings = get_settings_instance();
-        let settings = settings.lock();
+        handleHotkeys(hotkeys_listener);
 
-        match parse_keycodes(settings.show_app_hotkey.clone()) {
-            Ok(hotkeys) => {
-                hotkeys_listener.subscribe(
-                    Hotkeys::new(hotkeys),
-                    Box::new(|| {
-                        window::show_window();
-                    }),
-                );
-            }
-            Err(err) => println!(
-                "Error parsing hotkeys {:#?}: {}",
-                settings.show_app_hotkey, err
-            ),
-        }
+
     });
 
     handle.join().unwrap();
 
     listen();
+}
+
+fn handleHotkeys(mut hotkeys_listener: MutexGuard<RawMutex, HotkeysListener>) {
+    let settings = get_settings_instance();
+    let settings = settings.lock();
+
+    match parse_keycodes(settings.show_app_hotkey.clone()) {
+        Ok(hotkeys) => {
+            hotkeys_listener.subscribe(
+                Hotkeys::new(hotkeys),
+                Box::new(|| {
+                    window::show_window();
+                }),
+            );
+        }
+        Err(err) => println!(
+            "Error parsing hotkeys {:#?}: {}",
+            settings.show_app_hotkey, err
+        ),
+    }
+
+    // TODO: test/fix bind on linux/mac
+    let copy_to_clipboard_hotkeys = vec![Keycode::LControl, Keycode::C];
+    hotkeys_listener.subscribe(
+        Hotkeys::new(copy_to_clipboard_hotkeys),
+        Box::new(|| {
+            if !app_active_state() {
+                return;
+            }
+            // without sleep we get access to prev clipboard data
+            sleep(Duration::from_millis(100));
+
+            my_clipboard::text::on_copy();
+        }),
+    );
 }
 
 pub fn parse_keycodes(input: String) -> Result<Vec<Keycode>, String> {

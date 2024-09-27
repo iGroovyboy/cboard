@@ -30,6 +30,8 @@ fn main() {
                 println!(" ---- got event-name with payload {:?}", event.payload());
             });
 
+            my_clipboard::enable_clipboard();
+
             auto_replacement::enable_key_listener();
 
             thread::spawn(|| unsafe {
@@ -50,7 +52,6 @@ fn main() {
             window::hide_window,
             window::show_window,
             window::quit,
-            my_clipboard::enable_clipboard,
             my_clipboard::paste,
             auto_replacement::update_auto_replace_data,
             processes::get_proccesses_list,

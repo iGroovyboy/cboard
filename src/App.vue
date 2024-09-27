@@ -50,8 +50,6 @@ const bootUp = async () => {
   // }
 
   await appWindow.setAlwaysOnTop(true);
-
-  invoke("enable_clipboard");
 };
 
 bootUp();

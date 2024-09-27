@@ -1,4 +1,5 @@
 use crate::filesys;
+use crate::keys::send_paste_hotkeys;
 use crate::processes::app_active_state;
 use arboard::{Clipboard, Error, ImageData};
 use parking_lot::Mutex;
@@ -289,7 +290,6 @@ pub mod my_clipboard {
 
 pub static IMG_THREAD_INTERVAL: u64 = 1000;
 
-#[tauri::command]
 pub fn enable_clipboard() -> Result<(), String> {
     filesys::create_folders(&[filesys::FOLDER_CLIPBOARD, filesys::FOLDER_FAVOURITES])
         .expect("Couldn't create required directories");
@@ -315,22 +315,6 @@ pub fn enable_clipboard() -> Result<(), String> {
                 my_clipboard::image::on_copy();
             }
         });
-
-    // TODO: test/fix bind on linux/mac
-    // event listener: Ctrl + C
-    inputbot::KeybdKey::CKey.bind(move || {
-        if inputbot::KeybdKey::LControlKey.is_pressed() {
-            if !app_active_state() {
-                return;
-            }
-            // without sleep we get access to prev clipboard data
-            sleep(Duration::from_millis(100));
-
-            my_clipboard::text::on_copy();
-        }
-    });
-
-    inputbot::handle_input_events();
 
     Ok(())
 }
@@ -374,11 +358,7 @@ pub async fn paste(item: ClipboardItem, app: AppHandle) {
     .await
     .unwrap();
 
-    // TODO: move to mod
-    inputbot::KeybdKey::LControlKey.press();
-    inputbot::KeybdKey::VKey.press();
-    inputbot::KeybdKey::VKey.release();
-    inputbot::KeybdKey::LControlKey.release();
+    send_paste_hotkeys();
 
     sleep(Duration::from_millis(50));
     clipboard_clear().unwrap();

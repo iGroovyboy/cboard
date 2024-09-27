@@ -1,3 +1,4 @@
+pub mod keys;
 pub mod auto_replacement;
 pub mod autorun;
 pub mod clipboard;

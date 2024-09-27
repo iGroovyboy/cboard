@@ -18,15 +18,20 @@ tauri-build = { version = "1.5", features = [] }
 serde_json = "1.0"
 serde = { version = "1.0", features = ["derive"] }
 tauri = { version = "1.5", features = [ "os-all", "fs-write-file", "protocol-asset", "dialog-all", "fs-exists", "fs-read-dir", "fs-read-file", "global-shortcut-all", "system-tray", "window-all"] }
-inputbot = { git = "https://github.com/obv-mikhail/InputBot", branch = "develop" }
+# inputbot = { git = "https://github.com/obv-mikhail/InputBot", branch = "develop" }
 arboard = "3.2.0"
 image = "0.25.1"
 # sys-locale ???
 sys-locale = "0.3.1"
 winapi = { version = "0.3", features = ["winuser", "winnt", "winnls"] }
+
+# main event listener for auto_replacement
 rdev = { version = "0.5.3", features = ["serialize", "unstable_grab"] }
+# used only because can send text strings in original unicode
 enigo = { version = "0.2.1" }
+# used to listen to hotkeys combo and store them
 device_query = "2.1.0"
+
 percent-encoding = "2.3.1"
 parking_lot = "0.12.3"
 sysinfo = "0.31"
