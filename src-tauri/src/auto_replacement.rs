@@ -1,17 +1,17 @@
-use std::collections::HashMap;
-use std::sync::{Arc, OnceLock};
-use std::{thread, time};
-use std::fs::File;
-use std::io::BufReader;
-use rdev::{Event, EventType, Key as inKey, listen};
-use enigo::{Enigo, Settings, Key as outKey, Keyboard};
-use enigo::Direction::{Press, Release};
 use crate::common::KeyValue;
-use crate::filesys::{FILENAME_AUTO_REPLACEMENT};
-use crate::helpers::{get_tauri_handle};
+use crate::filesys::FILENAME_AUTO_REPLACEMENT;
+use crate::helpers::get_tauri_handle;
 use crate::keyboard_layouts::get_current_keyboard_layout;
 use crate::processes::app_active_state;
+use enigo::Direction::{Press, Release};
+use enigo::{Enigo, Key as outKey, Keyboard, Settings};
 use parking_lot::Mutex;
+use rdev::{listen, Event, EventType, Key as inKey};
+use std::collections::HashMap;
+use std::fs::File;
+use std::io::BufReader;
+use std::sync::{Arc, OnceLock};
+use std::{thread, time};
 
 #[allow(dead_code)]
 #[derive(Debug)]
@@ -27,9 +27,7 @@ pub struct KeyLog {
 
 impl Default for KeyLog {
     fn default() -> Self {
-        Self {
-            keys: Vec::new()
-        }
+        Self { keys: Vec::new() }
     }
 }
 
@@ -41,21 +39,29 @@ fn initialize_key_log(log: &'static OnceLock<Arc<Mutex<KeyLog>>>) {
 }
 
 fn clear_key_log() {
-    let mut auto_repl_buf = KEY_LOG.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock();
+    let mut auto_repl_buf = KEY_LOG
+        .get()
+        .expect("KEY_LOG_AUTO_REPLACEMENT must have starting value")
+        .lock();
     auto_repl_buf.keys = Vec::new();
 }
 
 fn auto_repl_buffer_string() -> Option<String> {
-    let key_log = KEY_LOG.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock();
+    let key_log = KEY_LOG
+        .get()
+        .expect("KEY_LOG_AUTO_REPLACEMENT must have starting value")
+        .lock();
     if key_log.keys.is_empty() {
         return None;
     }
 
     Some(
-        key_log.keys.iter()
+        key_log
+            .keys
+            .iter()
             .map(|e| e.event.name.clone().unwrap())
             .collect::<Vec<String>>()
-            .join("")
+            .join(""),
     )
 }
 
@@ -120,7 +126,8 @@ pub fn update_auto_replace_data() -> Result<(), String> {
     let file = File::open(from).unwrap();
     let reader = BufReader::new(file);
 
-    let data: Vec<KeyValue> = serde_json::from_reader(reader).expect("Failed to parse auto replacement JSON");
+    let data: Vec<KeyValue> =
+        serde_json::from_reader(reader).expect("Failed to parse auto replacement JSON");
     set_auto_replacement_data(data);
 
     Ok(())
@@ -132,17 +139,17 @@ pub fn enable_key_listener() {
     IS_SENDING.set(Arc::new(Mutex::new(false))).unwrap();
     update_auto_replace_data().unwrap();
 
-    let _ = thread::Builder::new().name("auto_replacement:key_listener".to_string())
-    .spawn(move || {
-        listen(move |event| {
-            if app_active_state() {
-                handle_event(event);
-            }
-        }).unwrap();
-    });
+    let _ = thread::Builder::new()
+        .name("auto_replacement:key_listener".to_string())
+        .spawn(move || {
+            listen(move |event| {
+                if app_active_state() {
+                    handle_event(event);
+                }
+            })
+            .unwrap();
+        });
 }
-
-
 
 fn handle_event(event: Event) {
     if is_sending() || is_user_auto_repl_map_empty() {
@@ -157,12 +164,33 @@ fn handle_event(event: Event) {
 fn save_auto_replacement_log(key: &inKey, event: Event) {
     let key_str = format!("{:?}", key);
 
-    let extra_keys = [inKey::LeftBracket, inKey::RightBracket, inKey::SemiColon,
-        inKey::Quote, inKey::Comma, inKey::Dot, inKey::BackSlash, inKey::Slash, inKey::Space];
+    let extra_keys = [
+        inKey::LeftBracket,
+        inKey::RightBracket,
+        inKey::SemiColon,
+        inKey::Quote,
+        inKey::Comma,
+        inKey::Dot,
+        inKey::BackSlash,
+        inKey::Slash,
+        inKey::Space,
+    ];
 
-    let num_row = [inKey::BackQuote, inKey::Num1, inKey::Num2, inKey::Num3,
-        inKey::Num4, inKey::Num5, inKey::Num6, inKey::Num7, inKey::Num8, inKey::Num9,
-        inKey::Num0, inKey::Minus, inKey::Equal];
+    let num_row = [
+        inKey::BackQuote,
+        inKey::Num1,
+        inKey::Num2,
+        inKey::Num3,
+        inKey::Num4,
+        inKey::Num5,
+        inKey::Num6,
+        inKey::Num7,
+        inKey::Num8,
+        inKey::Num9,
+        inKey::Num0,
+        inKey::Minus,
+        inKey::Equal,
+    ];
 
     // here may be some edge cases when modifiers reset buffer when shouldn't
     if !key_str.starts_with("Key") && !extra_keys.contains(key) && !num_row.contains(key) {
@@ -172,14 +200,18 @@ fn save_auto_replacement_log(key: &inKey, event: Event) {
 
     if let Some(name) = &event.name {
         if !is_valid_key_name(name) {
-            return
+            return;
         }
     } else {
-        return
+        return;
     }
 
-    KEY_LOG.get().expect("KEY_LOG_AUTO_REPLACEMENT must have starting value").lock()
-        .keys.push(KeyEvent {
+    KEY_LOG
+        .get()
+        .expect("KEY_LOG_AUTO_REPLACEMENT must have starting value")
+        .lock()
+        .keys
+        .push(KeyEvent {
             locale: get_current_keyboard_layout().unwrap_or_else(|| String::from("")),
             event,
         });
@@ -188,9 +220,10 @@ fn save_auto_replacement_log(key: &inKey, event: Event) {
 }
 
 fn is_valid_key_name(name: &String) -> bool {
-    !contains_escape_string(name) || name.chars().all(|c|
-        c.is_alphanumeric() || c.is_ascii_punctuation() || c.is_whitespace()
-    )
+    !contains_escape_string(name)
+        || name
+            .chars()
+            .all(|c| c.is_alphanumeric() || c.is_ascii_punctuation() || c.is_whitespace())
 }
 
 fn contains_escape_string(s: &str) -> bool {
@@ -209,7 +242,11 @@ fn handle_auto_replacement() {
             return;
         }
 
-        let map_key = user_auto_repl_map.keys().find(|&kk| buf.contains(&*kk)).unwrap().clone();
+        let map_key = user_auto_repl_map
+            .keys()
+            .find(|&kk| buf.contains(&*kk))
+            .unwrap()
+            .clone();
         let replacement = user_auto_repl_map.get(&map_key).unwrap().clone();
 
         clear_key_log();
@@ -217,7 +254,8 @@ fn handle_auto_replacement() {
         set_is_sending(true);
 
         // without thread this will perform actions BEFORE last symbols is typed in a window
-        let _ = thread::Builder::new().name("auto_replacement:send_keys".to_string())
+        let _ = thread::Builder::new()
+            .name("auto_replacement:send_keys".to_string())
             .spawn(move || {
                 // remove n chars
                 send_key_times(outKey::Backspace, map_key.chars().count() as i32).unwrap();
@@ -234,10 +272,14 @@ fn send_delayed_keypress(key: outKey, delay_ms: Option<u64>) -> Result<(), Strin
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
 
     enigo.key(key, Press).unwrap();
-    if let Some(t) = delay_ms { thread::sleep(time::Duration::from_millis(t)) }
+    if let Some(t) = delay_ms {
+        thread::sleep(time::Duration::from_millis(t))
+    }
 
     enigo.key(key, Release).unwrap();
-    if let Some(t) = delay_ms { thread::sleep(time::Duration::from_millis(t)) }
+    if let Some(t) = delay_ms {
+        thread::sleep(time::Duration::from_millis(t))
+    }
 
     Ok(())
 }

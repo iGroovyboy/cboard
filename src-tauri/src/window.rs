@@ -1,5 +1,5 @@
-use tauri::Manager;
 use crate::helpers::get_tauri_handle;
+use tauri::Manager;
 
 #[tauri::command]
 pub fn hide_window() {

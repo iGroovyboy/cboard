@@ -1,15 +1,14 @@
-use std::{ptr};
-use winapi::shared::minwindef::{LRESULT, WPARAM, LPARAM};
-use winapi::um::libloaderapi::GetModuleHandleW;
-use winapi::um::winuser::{
-    CallNextHookEx, SetWindowsHookExW, WH_KEYBOARD_LL,
-    KBDLLHOOKSTRUCT, HC_ACTION, WM_KEYDOWN, WM_SYSKEYDOWN,
-    VK_LWIN, VK_RWIN, MSG, GetMessageW, DispatchMessageW
-};
-use enigo::{Enigo, Settings, Keyboard, Key};
-use enigo::Direction::{Press, Release, Click};
 use crate::processes::{app_active_state, is_fg_window_fullscreen};
 use crate::settings::{get_settings_instance, update_settings, WinKeySetting};
+use enigo::Direction::{Click, Press, Release};
+use enigo::{Enigo, Key, Keyboard, Settings};
+use std::ptr;
+use winapi::shared::minwindef::{LPARAM, LRESULT, WPARAM};
+use winapi::um::libloaderapi::GetModuleHandleW;
+use winapi::um::winuser::{
+    CallNextHookEx, DispatchMessageW, GetMessageW, SetWindowsHookExW, HC_ACTION, KBDLLHOOKSTRUCT,
+    MSG, VK_LWIN, VK_RWIN, WH_KEYBOARD_LL, WM_KEYDOWN, WM_SYSKEYDOWN,
+};
 
 fn handle_win_key() {
     let mut enigo = Enigo::new(&Settings::default()).unwrap();
@@ -22,9 +21,9 @@ unsafe extern "system" fn hook_callback(code: i32, w_param: WPARAM, l_param: LPA
     if code == HC_ACTION && app_active_state() {
         let kb_struct = *(l_param as *const KBDLLHOOKSTRUCT);
 
-        if (kb_struct.vkCode == VK_LWIN as u32 || kb_struct.vkCode == VK_RWIN as u32) &&
-            (w_param == WM_KEYDOWN as WPARAM || w_param == WM_SYSKEYDOWN as WPARAM) {
-
+        if (kb_struct.vkCode == VK_LWIN as u32 || kb_struct.vkCode == VK_RWIN as u32)
+            && (w_param == WM_KEYDOWN as WPARAM || w_param == WM_SYSKEYDOWN as WPARAM)
+        {
             let allow_win_key = 0;
             let supress_win_key = 1;
 
@@ -38,20 +37,19 @@ unsafe extern "system" fn hook_callback(code: i32, w_param: WPARAM, l_param: LPA
             match x.win_key {
                 WinKeySetting::DisableInFullscreen => {
                     if is_fg_window_fullscreen() {
-                       return supress_win_key; 
+                        return supress_win_key;
                     } else {
-                       return allow_win_key;
+                        return allow_win_key;
                     }
-                },
+                }
                 WinKeySetting::Hotkey => {
                     handle_win_key();
                     return supress_win_key;
-                },
+                }
                 _ => {
                     return allow_win_key;
                 }
             }
-
         }
     }
 

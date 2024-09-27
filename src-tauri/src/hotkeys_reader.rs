@@ -1,5 +1,8 @@
 use device_query::{DeviceQuery, DeviceState, Keycode};
-use std::{sync::atomic::{AtomicBool, Ordering}, thread, time};
+use std::{
+    sync::atomic::{AtomicBool, Ordering},
+    thread, time,
+};
 use tauri::Manager;
 
 use crate::helpers::get_tauri_handle;
@@ -16,7 +19,7 @@ pub fn set_hotkey_reader_on(state: bool) {
 
 #[derive(Clone, serde::Serialize)]
 struct Payload {
-  keys: String,
+    keys: String,
 }
 
 #[tauri::command]
@@ -51,18 +54,21 @@ async fn hotkeys_reader() -> Vec<Keycode> {
         if keys != prev_keys && !keys.is_empty() {
             println!("[Keyboard] {:?}", keys);
             let _ = app.emit_all(
-                "hotkeys_reader", 
-                Payload { keys: format_keycodes(keys.clone())}
+                "hotkeys_reader",
+                Payload {
+                    keys: format_keycodes(keys.clone()),
+                },
             );
         }
-        
+
         prev_keys = keys;
     }
 }
 
 fn format_keycodes(keycodes: Vec<Keycode>) -> String {
-    keycodes.iter()
-            .map(|keycode| keycode.to_string())
-            .collect::<Vec<String>>()
-            .join(",")
+    keycodes
+        .iter()
+        .map(|keycode| keycode.to_string())
+        .collect::<Vec<String>>()
+        .join(",")
 }

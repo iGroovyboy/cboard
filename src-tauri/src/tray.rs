@@ -33,27 +33,25 @@ pub fn handle_tray_events(app: &AppHandle, event: SystemTrayEvent) {
         } => {
             println!("system tray received a right click");
         }
-        SystemTrayEvent::MenuItemClick { id, .. } => {
-            match id.as_str() {
-                STR_QUIT => {
-                    let window = app.get_window("main").unwrap();
-                    window.close().unwrap();
-                }
-                STR_TOGGLE => {
-                    let window = app.get_window("main").unwrap();
-                    let hide_item_handle = app.tray_handle().get_item("toggle");
-
-                    if window.is_visible().unwrap() {
-                        window.hide().unwrap();
-                        hide_item_handle.set_title("Show").unwrap();
-                    } else {
-                        window.show().unwrap();
-                        hide_item_handle.set_title("Hide").unwrap();
-                    }
-                }
-                _ => {}
+        SystemTrayEvent::MenuItemClick { id, .. } => match id.as_str() {
+            STR_QUIT => {
+                let window = app.get_window("main").unwrap();
+                window.close().unwrap();
             }
-        }
+            STR_TOGGLE => {
+                let window = app.get_window("main").unwrap();
+                let hide_item_handle = app.tray_handle().get_item("toggle");
+
+                if window.is_visible().unwrap() {
+                    window.hide().unwrap();
+                    hide_item_handle.set_title("Show").unwrap();
+                } else {
+                    window.show().unwrap();
+                    hide_item_handle.set_title("Hide").unwrap();
+                }
+            }
+            _ => {}
+        },
         _ => {}
     }
 }

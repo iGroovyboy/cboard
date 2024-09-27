@@ -1,7 +1,11 @@
-use std::sync::{Arc, OnceLock};
-use serde::{Deserialize, Deserializer};
-use crate::{autorun::autorun, filesys::{read_json_data, FILENAME_SETTINGS}, hotkeys_listener};
+use crate::{
+    autorun::autorun,
+    filesys::{read_json_data, FILENAME_SETTINGS},
+    hotkeys_listener,
+};
 use parking_lot::Mutex;
+use serde::{Deserialize, Deserializer};
+use std::sync::{Arc, OnceLock};
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize, Clone)]
@@ -45,15 +49,16 @@ impl<'de> Deserialize<'de> for WinKeySetting {
 }
 
 pub fn get_settings_instance() -> Arc<parking_lot::Mutex<Settings>> {
-    SETTINGS.get_or_init(|| {
-        Arc::new(parking_lot::Mutex::new(
-        Settings { 
-                autorun: false, 
-                win_key: WinKeySetting::Normal, 
-                win_key_hotkey: "".to_string(), 
-                show_app_hotkey: "LControl,Key1".to_string(), 
+    SETTINGS
+        .get_or_init(|| {
+            Arc::new(parking_lot::Mutex::new(Settings {
+                autorun: false,
+                win_key: WinKeySetting::Normal,
+                win_key_hotkey: "".to_string(),
+                show_app_hotkey: "LControl,Key1".to_string(),
             }))
-    }).clone()
+        })
+        .clone()
 }
 
 fn set_settings(new_data: Settings) -> Settings {
@@ -71,7 +76,7 @@ pub fn update_settings() -> Result<(), String> {
     match read_json_data::<Settings>(FILENAME_SETTINGS) {
         Ok(data) => {
             let settings = set_settings(data);
-            
+
             // TODO: move out to global event listener
             autorun(settings.autorun);
             hotkeys_listener::run();
@@ -84,4 +89,3 @@ pub fn update_settings() -> Result<(), String> {
         }
     }
 }
-

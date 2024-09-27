@@ -1,12 +1,12 @@
-use std::sync::{Arc, OnceLock};
-use std::{fs, thread};
-use std::thread::sleep;
-use std::time::Duration;
-use arboard::{Clipboard, Error, ImageData};
-use tauri::AppHandle;
 use crate::filesys;
 use crate::processes::app_active_state;
+use arboard::{Clipboard, Error, ImageData};
 use parking_lot::Mutex;
+use std::sync::{Arc, OnceLock};
+use std::thread::sleep;
+use std::time::Duration;
+use std::{fs, thread};
+use tauri::AppHandle;
 use tokio::task;
 
 // TODO: read from user settings
@@ -41,20 +41,24 @@ pub static PREV_IMAGE: OnceLock<Arc<Mutex<Option<ImageData>>>> = OnceLock::new()
 
 pub mod my_clipboard {
     use std::fs;
-    use std::sync::{Arc};
+    use std::sync::Arc;
 
     use arboard::Clipboard;
     use tauri::Manager;
 
-    use crate::helpers;
-    use crate::clipboard::{CLIPBOARD, ClipboardContent, MAX_CLIPBOARD_ITEMS};
+    use crate::clipboard::{ClipboardContent, CLIPBOARD, MAX_CLIPBOARD_ITEMS};
     use crate::filesys;
+    use crate::helpers;
     use crate::helpers::get_tauri_handle;
 
     pub fn get_instance() -> Arc<parking_lot::Mutex<Clipboard>> {
-        CLIPBOARD.get_or_init(|| {
-            Arc::new(parking_lot::Mutex::new(Clipboard::new().expect("Failed to create global clipboard instance")))
-        }).clone()
+        CLIPBOARD
+            .get_or_init(|| {
+                Arc::new(parking_lot::Mutex::new(
+                    Clipboard::new().expect("Failed to create global clipboard instance"),
+                ))
+            })
+            .clone()
     }
 
     pub fn has_image() -> bool {
@@ -84,10 +88,7 @@ pub mod my_clipboard {
             .app_local_data_dir()
             .expect("Failed to resolve app local dir");
 
-
-        let p = app_dir.as_path()
-            .join("data")
-            .join(&default_folder);
+        let p = app_dir.as_path().join("data").join(&default_folder);
 
         println!("save_clipboard: {}", p.display());
 
@@ -106,19 +107,27 @@ pub mod my_clipboard {
 
         filesys::remove_extra_files(default_folder, MAX_CLIPBOARD_ITEMS, &app);
 
-        app.emit_all("clipboard", filesys::Payload { message: String::from("contents") }).unwrap();
+        app.emit_all(
+            "clipboard",
+            filesys::Payload {
+                message: String::from("contents"),
+            },
+        )
+        .unwrap();
     }
 
     pub mod text {
         use std::fs;
         use std::path::PathBuf;
-        use std::sync::{Arc};
+        use std::sync::Arc;
 
-        use crate::clipboard::{ClipboardContent, my_clipboard, PREV_TEXT};
         use crate::clipboard::my_clipboard::get_instance;
+        use crate::clipboard::{my_clipboard, ClipboardContent, PREV_TEXT};
 
         pub fn get_previous() -> Arc<parking_lot::Mutex<Option<String>>> {
-            PREV_TEXT.get_or_init(|| { Arc::new(parking_lot::Mutex::new(None)) }).clone()
+            PREV_TEXT
+                .get_or_init(|| Arc::new(parking_lot::Mutex::new(None)))
+                .clone()
         }
 
         pub fn get_previous_text() -> Result<Option<String>, String> {
@@ -188,17 +197,17 @@ pub mod my_clipboard {
 
     pub mod image {
         use std::path::PathBuf;
-        use std::sync::{Arc};
+        use std::sync::Arc;
 
+        use crate::clipboard::{my_clipboard, ClipboardContent, PREV_IMAGE};
         use arboard::ImageData;
         use image::{ImageBuffer, Rgba};
-        use crate::clipboard::{ClipboardContent, my_clipboard, PREV_IMAGE};
         // use crate::{ClipboardContent, my_clipboard, PREV_IMAGE};
 
         pub fn get_previous() -> Arc<parking_lot::Mutex<Option<ImageData<'static>>>> {
-            PREV_IMAGE.get_or_init(|| {
-                Arc::new(parking_lot::Mutex::new(None))
-            }).clone()
+            PREV_IMAGE
+                .get_or_init(|| Arc::new(parking_lot::Mutex::new(None)))
+                .clone()
         }
 
         pub fn get_prev_image_data() -> Result<Option<ImageData<'static>>, String> {
@@ -222,19 +231,25 @@ pub mod my_clipboard {
         }
 
         pub fn eq(image_data1: &ImageData, image_data2: &ImageData) -> bool {
-            image_data1.width == image_data2.width &&
-                image_data1.height == image_data2.height &&
-                image_data1.bytes[..] == image_data2.bytes[..]
+            image_data1.width == image_data2.width
+                && image_data1.height == image_data2.height
+                && image_data1.bytes[..] == image_data2.bytes[..]
         }
 
-        pub fn save(path: &PathBuf, image_data: &ImageData) -> Result<(), Box<dyn std::error::Error>> {
+        pub fn save(
+            path: &PathBuf,
+            image_data: &ImageData,
+        ) -> Result<(), Box<dyn std::error::Error>> {
             let buffer: ImageBuffer<Rgba<u8>, _> = ImageBuffer::from_raw(
                 image_data.width as u32,
                 image_data.height as u32,
                 &image_data.bytes[..],
-            ).ok_or("Failed to create image buffer")?;
+            )
+            .ok_or("Failed to create image buffer")?;
 
-            buffer.save_with_format(path.as_path(), image::ImageFormat::Png).unwrap();
+            buffer
+                .save_with_format(path.as_path(), image::ImageFormat::Png)
+                .unwrap();
 
             Ok(())
         }
@@ -280,25 +295,26 @@ pub fn enable_clipboard() -> Result<(), String> {
         .expect("Couldn't create required directories");
 
     // image can get to clipboard in many ways, so we use interval-based checker
-    let _ = thread::Builder::new().name("clipboard:image_checker".to_string())
-    .spawn(move || {
-        my_clipboard::image::init_prev_image().unwrap();
+    let _ = thread::Builder::new()
+        .name("clipboard:image_checker".to_string())
+        .spawn(move || {
+            my_clipboard::image::init_prev_image().unwrap();
 
-        loop {
-            if !app_active_state() {
-                continue;
+            loop {
+                if !app_active_state() {
+                    continue;
+                }
+
+                sleep(Duration::from_millis(IMG_THREAD_INTERVAL));
+
+                if !my_clipboard::has_image() {
+                    continue;
+                }
+
+                // TODO: will get clipboard and prev_image instances every cycle - mb profile it?
+                my_clipboard::image::on_copy();
             }
-
-            sleep(Duration::from_millis(IMG_THREAD_INTERVAL));
-
-            if !my_clipboard::has_image() {
-                continue;
-            }
-
-            // TODO: will get clipboard and prev_image instances every cycle - mb profile it?
-            my_clipboard::image::on_copy();
-        }
-    });
+        });
 
     // TODO: test/fix bind on linux/mac
     // event listener: Ctrl + C
@@ -354,7 +370,9 @@ pub async fn paste(item: ClipboardItem, app: AppHandle) {
             }
             &_ => {}
         }
-    }).await.unwrap();
+    })
+    .await
+    .unwrap();
 
     // TODO: move to mod
     inputbot::KeybdKey::LControlKey.press();
@@ -366,7 +384,7 @@ pub async fn paste(item: ClipboardItem, app: AppHandle) {
     clipboard_clear().unwrap();
 }
 
-fn clipboard_clear() -> Result<(), Error>{
+fn clipboard_clear() -> Result<(), Error> {
     let mut clipboard = Clipboard::new().expect("Couldn't create Clipboard instance");
     clipboard.clear()?;
 

@@ -1,12 +1,15 @@
-use std::{fs::{self}, io};
+use crate::clipboard::FileTypes;
+use crate::helpers::get_tauri_handle;
+use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fs::File;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;
-use percent_encoding::{NON_ALPHANUMERIC, utf8_percent_encode};
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use std::{
+    fs::{self},
+    io,
+};
 use tauri::Manager;
-use crate::{clipboard::FileTypes};
-use crate::helpers::{get_tauri_handle};
 use tokio::task;
 
 #[allow(dead_code)]
@@ -73,7 +76,7 @@ pub async fn delete_all_by_folder(folder: String, app: tauri::AppHandle) {
 
     if fs::read_dir(&path).is_err() {
         eprintln!("Couldn't read dir");
-    } 
+    }
 
     for entry in fs::read_dir(&path).unwrap() {
         let entry = entry.unwrap();
@@ -139,7 +142,12 @@ pub fn remove_clipboard_item(filename: String, folder: String, app: tauri::AppHa
 
 #[allow(dead_code)]
 #[tauri::command]
-pub async fn move_clipboard_item(from: String, filename: String, folder: String, app: tauri::AppHandle) {
+pub async fn move_clipboard_item(
+    from: String,
+    filename: String,
+    folder: String,
+    app: tauri::AppHandle,
+) {
     let to = app
         .path_resolver()
         .app_local_data_dir()
@@ -184,10 +192,7 @@ trait PathBufTauri {
 
 impl PathBufTauri for PathBuf {
     fn asset_path(self) -> String {
-        let url = utf8_percent_encode(
-            self.to_str().unwrap(),
-            NON_ALPHANUMERIC
-        );
+        let url = utf8_percent_encode(self.to_str().unwrap(), NON_ALPHANUMERIC);
 
         // \tauri\core\tauri\scripts\core.js:12
         format!("https://asset.localhost/{url}")
@@ -198,7 +203,7 @@ fn read_file_by_char_len(file_path: &PathBuf, max_len: u8) -> Result<String, io:
     let file = File::open(file_path)?;
     let mut reader = BufReader::with_capacity(max_len as usize, file);
     let mut contents = String::new();
-    
+
     let mut char_count: usize = 0;
     while char_count < max_len as usize {
         let mut single_char = [0; 1];
@@ -217,7 +222,7 @@ fn read_file_by_char_len(file_path: &PathBuf, max_len: u8) -> Result<String, io:
     Ok(contents)
 }
 
-#[derive(Debug, Serialize, Deserialize,)]
+#[derive(Debug, Serialize, Deserialize)]
 struct StorageFile {
     path: String,
     name: String,
@@ -227,11 +232,11 @@ struct StorageFile {
     contents: Option<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize,)]
+#[derive(Debug, Serialize, Deserialize)]
 struct StorageFolder {
     path: String,
     name: String,
-    children: Vec<StorageFile>
+    children: Vec<StorageFile>,
 }
 
 #[tauri::command]
@@ -250,21 +255,32 @@ pub async fn read_clipboard_data() -> Result<String, String> {
 
     let mut data: Vec<StorageFolder> = Vec::new();
 
-    let entries = fs::read_dir(dir).unwrap()
+    let entries = fs::read_dir(dir)
+        .unwrap()
         .filter(|e| e.as_ref().unwrap().path().is_dir())
         .map(|res| res.map(|e| e.path()))
-        .collect::<Result<Vec<_>, io::Error>>().unwrap();
+        .collect::<Result<Vec<_>, io::Error>>()
+        .unwrap();
 
     for subdir in entries {
-        let files = fs::read_dir(&subdir).unwrap()
-            .collect::<Result<Vec<_>, io::Error>>().unwrap();
+        let files = fs::read_dir(&subdir)
+            .unwrap()
+            .collect::<Result<Vec<_>, io::Error>>()
+            .unwrap();
 
         let mut children = Vec::new();
 
         for file in files {
-            let extension = file.path().extension().unwrap().to_string_lossy().to_string();
+            let extension = file
+                .path()
+                .extension()
+                .unwrap()
+                .to_string_lossy()
+                .to_string();
             let contents = match extension.as_str() {
-                FileTypes::TXT => Some(read_file_by_char_len(&file.path(), FILE_MAX_LENGTH).unwrap_or("".to_string())),
+                FileTypes::TXT => Some(
+                    read_file_by_char_len(&file.path(), FILE_MAX_LENGTH).unwrap_or("".to_string()),
+                ),
                 FileTypes::PNG => Some(&file.path().asset_path()).cloned(),
                 _ => None,
             };
@@ -284,16 +300,18 @@ pub async fn read_clipboard_data() -> Result<String, String> {
         children.sort_by(|a, b| b.name.cmp(&a.name));
 
         data.push(StorageFolder {
-           path: subdir.as_path().to_string_lossy().to_string(),
-           name: subdir.file_name().unwrap().to_string_lossy().to_string(),
-           children,
+            path: subdir.as_path().to_string_lossy().to_string(),
+            name: subdir.file_name().unwrap().to_string_lossy().to_string(),
+            children,
         });
     }
 
     Ok(serde_json::to_string(&data).unwrap_or("oops".to_string()))
 }
 
-pub fn read_json_data<T: DeserializeOwned>(filename: &str) -> Result<T, Box<dyn std::error::Error>> {
+pub fn read_json_data<T: DeserializeOwned>(
+    filename: &str,
+) -> Result<T, Box<dyn std::error::Error>> {
     let app = get_tauri_handle().clone();
     let from = app
         .path_resolver()

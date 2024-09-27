@@ -1,31 +1,28 @@
 use core::time;
+use device_query::{DeviceQuery, DeviceState, Keycode};
+use parking_lot::{Condvar, Mutex};
 use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::thread;
-use device_query::{DeviceQuery, DeviceState, Keycode};
-use parking_lot::{Mutex, Condvar};
 
-use crate::{window};
 use crate::settings::get_settings_instance;
+use crate::window;
 
 static HOTKEYS_LISTENER: OnceLock<Arc<Mutex<HotkeysListener>>> = OnceLock::new();
 
 pub fn get_hotkeys_listener_instance() -> Arc<parking_lot::Mutex<HotkeysListener>> {
-    HOTKEYS_LISTENER.get_or_init(|| {
-        Arc::new(parking_lot::Mutex::new(
-            HotkeysListener::new()
-        ))
-            
-    }).clone()
+    HOTKEYS_LISTENER
+        .get_or_init(|| Arc::new(parking_lot::Mutex::new(HotkeysListener::new())))
+        .clone()
 }
 
 static GLOBAL_CONDVAR: OnceLock<Arc<(Mutex<bool>, Condvar)>> = OnceLock::new();
 
 fn get_global_condvar() -> Arc<(Mutex<bool>, Condvar)> {
-    GLOBAL_CONDVAR.get_or_init(|| Arc::new(
-        (Mutex::new(false), Condvar::new())
-    )).clone()
+    GLOBAL_CONDVAR
+        .get_or_init(|| Arc::new((Mutex::new(false), Condvar::new())))
+        .clone()
 }
 
 static IS_HOTKEYS_LISTENER: AtomicBool = AtomicBool::new(false);
@@ -112,7 +109,7 @@ fn listen() {
 
             let keys: Vec<Keycode> = device_state.get_keys();
 
-            if keys.is_empty() || keys == prev_keys  {
+            if keys.is_empty() || keys == prev_keys {
                 continue;
             }
 
@@ -120,7 +117,6 @@ fn listen() {
                 if hotkey.is_pressed(&keys) {
                     callback();
                 }
-
             }
 
             prev_keys = keys;
@@ -140,9 +136,9 @@ pub fn run() {
                 cvar.wait(&mut finished);
             }
         }
-        
+
         let hotkeys_listener = get_hotkeys_listener_instance();
-        
+
         let mut hotkeys_listener = hotkeys_listener.lock();
 
         hotkeys_listener.subscribers.clear();
@@ -158,8 +154,11 @@ pub fn run() {
                         window::show_window();
                     }),
                 );
-            },
-            Err(err) => println!("Error parsing hotkeys {:#?}: {}", settings.show_app_hotkey, err),
+            }
+            Err(err) => println!(
+                "Error parsing hotkeys {:#?}: {}",
+                settings.show_app_hotkey, err
+            ),
         }
     });
 

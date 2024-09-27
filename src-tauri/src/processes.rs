@@ -1,16 +1,20 @@
+use crate::filesys::{read_json_data, FILENAME_APPS_BLACKLIST};
 use core::time;
-use std::collections::{HashSet};
-use std::path::{Path};
+use parking_lot::Mutex;
+use serde::{Deserialize, Serialize};
+use std::collections::HashSet;
+use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, OnceLock};
 use std::thread;
-use serde::{Deserialize, Serialize};
 use sysinfo::{Pid, RefreshKind, System};
 use winapi::shared::minwindef::{BOOL, LPARAM};
 use winapi::shared::windef::{HWND, RECT};
-use winapi::um::winuser::{EnumWindows, GetDesktopWindow, GetForegroundWindow, GetShellWindow, GetSystemMetrics, GetWindowRect, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible, SM_CXSCREEN, SM_CYSCREEN};
-use crate::filesys::{read_json_data, FILENAME_APPS_BLACKLIST};
-use parking_lot::Mutex;
+use winapi::um::winuser::{
+    EnumWindows, GetDesktopWindow, GetForegroundWindow, GetShellWindow, GetSystemMetrics,
+    GetWindowRect, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible,
+    SM_CXSCREEN, SM_CYSCREEN,
+};
 
 // TODO: refactor to use interface-like implementation to have same pub funcs for other os
 
@@ -66,17 +70,22 @@ impl SystemProcesses {
 
     fn processes(&mut self) -> Vec<MyProcess> {
         // Unless ProcessesToUpdate::All is used, dead processes are not removed from the set of processes kept in System
-        self.sys.refresh_processes(sysinfo::ProcessesToUpdate::All);  // 20ms
+        self.sys.refresh_processes(sysinfo::ProcessesToUpdate::All); // 20ms
         let processes = self.sys.processes();
 
         let mut list: Vec<MyProcess> = Vec::new();
         for (pid, title) in foreground_apps().iter() {
             let p = processes.get(&Pid::from_u32(*pid)).unwrap();
-            list.push(MyProcess{
+            list.push(MyProcess {
                 pid: *pid,
                 title: title.clone(),
                 filename: p.name().to_string_lossy().to_string(),
-                filepath: p.exe().unwrap_or(Path::new("")).to_owned().to_string_lossy().to_string(),
+                filepath: p
+                    .exe()
+                    .unwrap_or(Path::new(""))
+                    .to_owned()
+                    .to_string_lossy()
+                    .to_string(),
             });
         }
 
@@ -101,7 +110,8 @@ pub unsafe fn watch_active_window() {
 
             if let Some(blacklisted) = blacklist
                 .iter()
-                .find(|bl| bl.filepath == current_process.filepath ) {
+                .find(|bl| bl.filepath == current_process.filepath)
+            {
                 if blacklisted.enabled {
                     println!("Blacklisted app: {:?}", blacklisted.filepath);
                     set_app_active_state(false);
@@ -118,7 +128,7 @@ pub unsafe fn watch_active_window() {
 unsafe fn handle_full_screen_app(hwnd: HWND, process: MyProcess) {
     if !cfg!(target_os = "windows") {
         return;
-    } 
+    }
 
     if process.filename == "explorer.exe" {
         return;
@@ -128,7 +138,7 @@ unsafe fn handle_full_screen_app(hwnd: HWND, process: MyProcess) {
         true => {
             println!("Fullscreen app found: {:?}", window_text(hwnd));
             set_is_fg_window_fullscreen(true);
-        },
+        }
         _ => {
             set_is_fg_window_fullscreen(false);
         }
@@ -144,9 +154,9 @@ fn is_blacklist_empty() -> bool {
 }
 
 fn get_blacklist_instance() -> Arc<parking_lot::Mutex<Vec<BlacklistItem>>> {
-    BLACKILST.get_or_init(|| {
-        Arc::new(parking_lot::Mutex::new(vec![]))
-    }).clone()
+    BLACKILST
+        .get_or_init(|| Arc::new(parking_lot::Mutex::new(vec![])))
+        .clone()
 }
 
 fn set_blacklist_data(new_data: Vec<BlacklistItem>) {
@@ -170,13 +180,20 @@ pub fn update_blacklist_data() -> Result<(), String> {
     }
 }
 
-pub unsafe fn active_window(system_processes: &mut SystemProcesses, window: Option<HWND>) -> Option<MyProcess> {
+pub unsafe fn active_window(
+    system_processes: &mut SystemProcesses,
+    window: Option<HWND>,
+) -> Option<MyProcess> {
     let hwnd = window.unwrap_or(GetForegroundWindow());
 
     let mut pid: u32 = 0;
     GetWindowThreadProcessId(hwnd, &mut pid);
 
-    if let Some(process) = system_processes.processes().iter().find(|item| item.pid == pid) {
+    if let Some(process) = system_processes
+        .processes()
+        .iter()
+        .find(|item| item.pid == pid)
+    {
         return Some(process.clone());
     }
 
@@ -190,11 +207,16 @@ pub fn processes() -> Vec<MyProcess> {
     let mut list: Vec<MyProcess> = Vec::new();
     for (pid, title) in foreground_apps().iter() {
         let p = processes.get(&Pid::from_u32(*pid)).unwrap();
-        list.push(MyProcess{
+        list.push(MyProcess {
             pid: *pid,
             title: title.clone(),
             filename: p.name().to_string_lossy().to_string(),
-            filepath: p.exe().unwrap_or(Path::new("")).to_owned().to_string_lossy().to_string(),
+            filepath: p
+                .exe()
+                .unwrap_or(Path::new(""))
+                .to_owned()
+                .to_string_lossy()
+                .to_string(),
         });
     }
 
@@ -236,7 +258,10 @@ unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: LPARAM) -> BOOL 
 fn foreground_apps() -> HashSet<(u32, String)> {
     let mut foreground_apps: HashSet<(u32, String)> = HashSet::new();
     unsafe {
-        EnumWindows(Some(enum_windows_proc), &mut foreground_apps as *mut _ as isize);
+        EnumWindows(
+            Some(enum_windows_proc),
+            &mut foreground_apps as *mut _ as isize,
+        );
     }
 
     foreground_apps

@@ -1,12 +1,12 @@
-use winapi::um::winuser::{GetForegroundWindow, GetKeyboardLayout};
-use winapi::um::winnls::{LCIDToLocaleName};
-use winapi::shared::minwindef::{LOWORD};
+use std::ffi::OsString;
 use std::os::windows::ffi::OsStringExt;
-use std::ffi::{OsString};
 use std::ptr;
 use winapi::ctypes::c_int;
+use winapi::shared::minwindef::LOWORD;
+use winapi::um::winnls::LCIDToLocaleName;
 use winapi::um::winnt::{LOCALE_NAME_MAX_LENGTH, MAKELCID, SORT_DEFAULT};
 use winapi::um::winuser::GetWindowThreadProcessId;
+use winapi::um::winuser::{GetForegroundWindow, GetKeyboardLayout};
 
 /// TODO: add linux/macos
 // const KL_NAMELENGTH: usize = 9;
@@ -19,12 +19,24 @@ pub fn get_current_keyboard_layout() -> Option<String> {
 
         let lang_id = LOWORD(layout_id as u32);
 
-        let mut buffer: [u16; LOCALE_NAME_MAX_LENGTH as usize] = [0; LOCALE_NAME_MAX_LENGTH as usize];
+        let mut buffer: [u16; LOCALE_NAME_MAX_LENGTH as usize] =
+            [0; LOCALE_NAME_MAX_LENGTH as usize];
 
-        if LCIDToLocaleName(MAKELCID(lang_id, SORT_DEFAULT), buffer.as_mut_ptr(), LOCALE_NAME_MAX_LENGTH as c_int, 0) != 0 {
+        if LCIDToLocaleName(
+            MAKELCID(lang_id, SORT_DEFAULT),
+            buffer.as_mut_ptr(),
+            LOCALE_NAME_MAX_LENGTH as c_int,
+            0,
+        ) != 0
+        {
             let locale_name: OsString = OsStringExt::from_wide(&buffer);
             //println!("X-->{:#?}", locale_name.to_string_lossy().trim_end_matches('\0').to_string());
-            Some(locale_name.to_string_lossy().trim_end_matches('\0').to_string())
+            Some(
+                locale_name
+                    .to_string_lossy()
+                    .trim_end_matches('\0')
+                    .to_string(),
+            )
         } else {
             eprintln!("Failed to get the input language.");
             None

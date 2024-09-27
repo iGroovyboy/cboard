@@ -1,6 +1,6 @@
+use serde::Serialize;
 use std::sync::OnceLock;
 use std::time::{SystemTime, UNIX_EPOCH};
-use serde::Serialize;
 use tauri::AppHandle;
 
 #[derive(Clone, Serialize)]
