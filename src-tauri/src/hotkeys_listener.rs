@@ -79,6 +79,12 @@ impl HotkeysListener {
     }
 }
 
+impl Default for HotkeysListener {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 fn listen() {
     println!("listener started");
 

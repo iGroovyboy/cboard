@@ -285,7 +285,7 @@ pub fn enable_clipboard() -> Result<(), String> {
         my_clipboard::image::init_prev_image().unwrap();
 
         loop {
-            if app_active_state() == false {
+            if !app_active_state() {
                 continue;
             }
 
@@ -304,7 +304,7 @@ pub fn enable_clipboard() -> Result<(), String> {
     // event listener: Ctrl + C
     inputbot::KeybdKey::CKey.bind(move || {
         if inputbot::KeybdKey::LControlKey.is_pressed() {
-            if app_active_state() == false {
+            if !app_active_state() {
                 return;
             }
             // without sleep we get access to prev clipboard data

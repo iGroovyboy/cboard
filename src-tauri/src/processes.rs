@@ -95,25 +95,22 @@ pub unsafe fn watch_active_window() {
         }
 
         let hwnd = GetForegroundWindow();
-        match active_window(&mut system_processes, Some(hwnd)) {
-            Some(current_process) => {
-                let blacklist = get_blacklist_instance(); // 2µs 
-                let blacklist = blacklist.lock();
+        if let Some(current_process) = active_window(&mut system_processes, Some(hwnd)) {
+            let blacklist = get_blacklist_instance(); // 2µs
+            let blacklist = blacklist.lock();
 
-                if let Some(blacklisted) = blacklist
-                    .iter()
-                    .find(|bl| bl.filepath == current_process.filepath ) {
-                    if blacklisted.enabled {
-                        println!("Blacklisted app: {:?}", blacklisted.filepath);
-                        set_app_active_state(false);
-                    }
-                } else {
-                    set_app_active_state(true);
+            if let Some(blacklisted) = blacklist
+                .iter()
+                .find(|bl| bl.filepath == current_process.filepath ) {
+                if blacklisted.enabled {
+                    println!("Blacklisted app: {:?}", blacklisted.filepath);
+                    set_app_active_state(false);
                 }
+            } else {
+                set_app_active_state(true);
+            }
 
-                handle_full_screen_app(hwnd, current_process);
-            },
-            None => {},
+            handle_full_screen_app(hwnd, current_process);
         }
     }
 }
@@ -127,7 +124,7 @@ unsafe fn handle_full_screen_app(hwnd: HWND, process: MyProcess) {
         return;
     }
 
-    match { is_fullscreen(hwnd) } {
+    match is_fullscreen(hwnd) {
         true => {
             println!("Fullscreen app found: {:?}", window_text(hwnd));
             set_is_fg_window_fullscreen(true);

@@ -203,22 +203,21 @@ fn contains_escape_string(s: &str) -> bool {
 /// `USER_AUTO_REPLACEMENT_MAP`, the function replaces the key with its
 /// corresponding value.
 fn handle_auto_replacement() {
-    match auto_repl_buffer_string() {
-        Some(buf) => {
-            let user_auto_repl_map = USER_MAP.get().unwrap().lock();
-            if !user_auto_repl_map.keys().any(|k| buf.contains(k)) {
-                return;
-            }
+    if let Some(buf) = auto_repl_buffer_string() {
+        let user_auto_repl_map = USER_MAP.get().unwrap().lock();
+        if !user_auto_repl_map.keys().any(|k| buf.contains(k)) {
+            return;
+        }
 
-            let map_key = user_auto_repl_map.keys().find(|&kk| buf.contains(&*kk)).unwrap().clone();
-            let replacement = user_auto_repl_map.get(&map_key).unwrap().clone();
+        let map_key = user_auto_repl_map.keys().find(|&kk| buf.contains(&*kk)).unwrap().clone();
+        let replacement = user_auto_repl_map.get(&map_key).unwrap().clone();
 
-            clear_key_log();
+        clear_key_log();
 
-            set_is_sending(true);
+        set_is_sending(true);
 
-            // without thread this will perform actions BEFORE last symbols is typed in a window
-            let _ = thread::Builder::new().name("auto_replacement:send_keys".to_string())
+        // without thread this will perform actions BEFORE last symbols is typed in a window
+        let _ = thread::Builder::new().name("auto_replacement:send_keys".to_string())
             .spawn(move || {
                 // remove n chars
                 send_key_times(outKey::Backspace, map_key.chars().count() as i32).unwrap();
@@ -226,12 +225,8 @@ fn handle_auto_replacement() {
                 send_string(&replacement).unwrap();
             });
 
-            set_is_sending(false);
-        },
-        None => {
-        },
+        set_is_sending(false);
     }
-
 }
 
 // TODO: move to separate mod

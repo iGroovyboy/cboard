@@ -71,7 +71,7 @@ pub async fn delete_all_by_folder(folder: String, app: tauri::AppHandle) {
 
     let mut tasks = Vec::new();
 
-    if let Err(_) = fs::read_dir(&path) {
+    if fs::read_dir(&path).is_err() {
         eprintln!("Couldn't read dir");
     } 
 
@@ -123,7 +123,7 @@ pub fn remove_clipboard_item(filename: String, folder: String, app: tauri::AppHa
         .join(folder)
         .join(filename);
 
-    if let Ok(_) = fs::remove_file(&file) {
+    if fs::remove_file(&file).is_ok() {
         println!("removed file {:?}", file);
         app.emit_all(
             "clipboard",
@@ -281,7 +281,7 @@ pub async fn read_clipboard_data() -> Result<String, String> {
             children.push(file_data);
         }
 
-        children.sort_by(|a, b| a.name.cmp(&b.name));
+        children.sort_by(|a, b| b.name.cmp(&a.name));
 
         data.push(StorageFolder {
            path: subdir.as_path().to_string_lossy().to_string(),

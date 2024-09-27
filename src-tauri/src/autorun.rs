@@ -11,7 +11,7 @@ pub fn autorun(value: bool) {
                 .build()
                 .unwrap();
     
-            if value == true {
+            if value {
                 let _ = auto.enable().is_ok();
             } else {
                 let _ = auto.disable().is_ok();
