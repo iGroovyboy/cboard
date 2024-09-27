@@ -6,7 +6,7 @@
 use std::thread;
 use tauri::{Manager};
 use app::helpers::APP_HANDLE;
-use app::{auto_replacement, clipboard as my_clipboard, filesys, hotkeys_listener, hotkeys_reader, processes, settings, tray, win_key_hook, window};
+use app::{auto_replacement, clipboard as my_clipboard, filesys, hotkeys_reader, processes, settings, tray, win_key_hook, window};
 
 fn main() {
     tauri::Builder::default()

@@ -268,8 +268,6 @@ pub mod my_clipboard {
                     }
                 }
             }
-
-            ()
         }
     }
 }

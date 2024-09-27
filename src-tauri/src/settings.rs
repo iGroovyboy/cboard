@@ -1,8 +1,7 @@
 use std::sync::{Arc, OnceLock};
 use serde::{Deserialize, Deserializer};
-use crate::{autorun::autorun, filesys::{read_json_data, FILENAME_SETTINGS}, helpers::{get_tauri_handle, EmptyPayload}, hotkeys_listener};
+use crate::{autorun::autorun, filesys::{read_json_data, FILENAME_SETTINGS}, hotkeys_listener};
 use parking_lot::Mutex;
-use tauri::Manager;
 
 #[allow(dead_code)]
 #[derive(Debug, Deserialize, Clone)]

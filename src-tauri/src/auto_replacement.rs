@@ -193,7 +193,7 @@ fn is_valid_key_name(name: &String) -> bool {
     )
 }
 
-fn contains_escape_string(s: &String) -> bool {
+fn contains_escape_string(s: &str) -> bool {
     s.chars().any(|c| c.is_ascii_control())
 }
 
@@ -229,7 +229,6 @@ fn handle_auto_replacement() {
             set_is_sending(false);
         },
         None => {
-            return;
         },
     }
 

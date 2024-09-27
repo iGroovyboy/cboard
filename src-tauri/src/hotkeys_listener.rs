@@ -74,7 +74,7 @@ impl HotkeysListener {
         self.subscribers.remove(&hotkey);
     }
 
-    pub fn clear(&mut self, hotkey: Hotkeys) {
+    pub fn clear(&mut self) {
         self.subscribers.clear();
     }
 }
@@ -86,7 +86,7 @@ fn listen() {
         let (lock, cvar) = &*get_global_condvar();
 
         let hotkeys_listener = get_hotkeys_listener_instance();
-        let mut hotkeys_listener = hotkeys_listener.lock();
+        let hotkeys_listener = hotkeys_listener.lock();
 
         let device_state = DeviceState::new();
         let mut prev_keys: Vec<Keycode> = vec![];
@@ -97,7 +97,6 @@ fn listen() {
             thread::sleep(time::Duration::from_millis(10));
 
             if !hotkey_listener() {
-                println!("!hotkey_listener");
                 let mut finished = lock.lock();
                 *finished = true;
                 cvar.notify_one();

@@ -2,7 +2,7 @@ use std::{ptr};
 use winapi::shared::minwindef::{LRESULT, WPARAM, LPARAM};
 use winapi::um::libloaderapi::GetModuleHandleW;
 use winapi::um::winuser::{
-    CallNextHookEx, SetWindowsHookExW, UnhookWindowsHookEx, WH_KEYBOARD_LL,
+    CallNextHookEx, SetWindowsHookExW, WH_KEYBOARD_LL,
     KBDLLHOOKSTRUCT, HC_ACTION, WM_KEYDOWN, WM_SYSKEYDOWN,
     VK_LWIN, VK_RWIN, MSG, GetMessageW, DispatchMessageW
 };
@@ -69,11 +69,10 @@ pub unsafe fn win_key_hook() {
         return;
     }
 
+    // TODO: remove loop?
     loop {
         let mut msg: MSG = std::mem::zeroed();
         GetMessageW(&mut msg, ptr::null_mut(), 0, 0);
         DispatchMessageW(&msg);
     }
-
-    UnhookWindowsHookEx(hook);
 }

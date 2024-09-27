@@ -7,6 +7,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tauri::Manager;
 use crate::{clipboard::FileTypes};
 use crate::helpers::{get_tauri_handle};
+use tokio::task;
 
 #[allow(dead_code)]
 pub const FOLDER_DATA: &str = "data";
@@ -36,14 +37,12 @@ pub fn remove_extra_files(folder: String, max_files_count: i32, app: &tauri::App
         .join(FOLDER_DATA)
         .join(folder);
 
-    let files_count = (fs::read_dir(&path).unwrap().count() as i32) + 1;
-    println!("Count: {}", &files_count);
-
-    let mut files = fs::read_dir(&path).unwrap();
+    let files_count = fs::read_dir(&path).unwrap().count() as i32;
+    let files = fs::read_dir(&path).unwrap();
     if files_count > max_files_count {
         let mut left_to_remove = files_count - max_files_count;
 
-        while let Some(file) = files.next() {
+        for file in files {
             if left_to_remove < 1 {
                 break;
             }
@@ -56,7 +55,7 @@ pub fn remove_extra_files(folder: String, max_files_count: i32, app: &tauri::App
 
 #[allow(dead_code)]
 #[tauri::command]
-pub fn delete_all_by_folder(folder: String, app: tauri::AppHandle) {
+pub async fn delete_all_by_folder(folder: String, app: tauri::AppHandle) {
     let path = app
         .path_resolver()
         .app_local_data_dir()
@@ -65,9 +64,43 @@ pub fn delete_all_by_folder(folder: String, app: tauri::AppHandle) {
         .join(FOLDER_DATA)
         .join(&folder);
 
-    fs::remove_dir_all(&path).unwrap();
-    fs::create_dir(&path).unwrap();
-    println!("removed contents of {:?}", &folder);
+    if !path.is_dir() {
+        println!("Not a directory: {:?}", &folder);
+        return;
+    }
+
+    let mut tasks = Vec::new();
+
+    if let Err(_) = fs::read_dir(&path) {
+        eprintln!("Couldn't read dir");
+    } 
+
+    for entry in fs::read_dir(&path).unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+
+        if path.is_file() {
+            let task = task::spawn(async move {
+                match fs::remove_file(&path) {
+                    Ok(_) => println!("File removed: {:?}", path),
+                    Err(e) => {
+                        if e.kind() == io::ErrorKind::PermissionDenied {
+                            eprintln!("File is locked or in use: {:?}", path);
+                        } else {
+                            eprintln!("Error removing file: {:?}", e);
+                        }
+                    }
+                }
+            });
+
+            tasks.push(task);
+        }
+    }
+
+    for task in tasks {
+        let _ = task.await;
+    }
+
     app.emit_all(
         "clipboard",
         Payload {
@@ -90,15 +123,18 @@ pub fn remove_clipboard_item(filename: String, folder: String, app: tauri::AppHa
         .join(folder)
         .join(filename);
 
-    fs::remove_file(&file).unwrap();
-    println!("removed file {:?}", file);
-    app.emit_all(
-        "clipboard",
-        Payload {
-            message: "remove_clipboard_item".to_string(),
-        },
-    )
-    .unwrap();
+    if let Ok(_) = fs::remove_file(&file) {
+        println!("removed file {:?}", file);
+        app.emit_all(
+            "clipboard",
+            Payload {
+                message: "remove_clipboard_item".to_string(),
+            },
+        )
+        .unwrap();
+    } else {
+        eprintln!("file doesn't exist {:?}", file);
+    }
 }
 
 #[allow(dead_code)]
@@ -234,11 +270,11 @@ pub async fn read_clipboard_data() -> Result<String, String> {
             };
 
             let file_data = StorageFile {
-                contents: contents,
+                contents,
                 folder: subdir.file_name().unwrap().to_string_lossy().to_string(),
                 name: file.file_name().to_string_lossy().to_string(),
                 path: file.path().to_string_lossy().to_string(),
-                extension: extension,
+                extension,
                 size: file.metadata().unwrap().len(),
             };
 
@@ -250,7 +286,7 @@ pub async fn read_clipboard_data() -> Result<String, String> {
         data.push(StorageFolder {
            path: subdir.as_path().to_string_lossy().to_string(),
            name: subdir.file_name().unwrap().to_string_lossy().to_string(),
-           children: children,
+           children,
         });
     }
 

@@ -8,7 +8,7 @@ pub fn make_tray() -> SystemTray {
         .add_item(CustomMenuItem::new(STR_TOGGLE, "Hide"))
         .add_item(CustomMenuItem::new(STR_QUIT, "Quit"));
 
-    return SystemTray::new().with_menu(menu);
+    SystemTray::new().with_menu(menu)
 }
 
 pub fn handle_tray_events(app: &AppHandle, event: SystemTrayEvent) {
