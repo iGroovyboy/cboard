@@ -147,7 +147,7 @@ pub fn run() {
 
         hotkeys_listener.subscribers.clear();
 
-        handleHotkeys(hotkeys_listener);
+        handle_hotkeys(hotkeys_listener);
 
 
     });
@@ -157,7 +157,7 @@ pub fn run() {
     listen();
 }
 
-fn handleHotkeys(mut hotkeys_listener: MutexGuard<RawMutex, HotkeysListener>) {
+fn handle_hotkeys(mut hotkeys_listener: MutexGuard<RawMutex, HotkeysListener>) {
     let settings = get_settings_instance();
     let settings = settings.lock();
 

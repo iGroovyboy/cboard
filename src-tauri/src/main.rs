@@ -30,7 +30,7 @@ fn main() {
                 println!(" ---- got event-name with payload {:?}", event.payload());
             });
 
-            my_clipboard::enable_clipboard();
+            let _ = my_clipboard::enable_clipboard();
 
             auto_replacement::enable_key_listener();
 

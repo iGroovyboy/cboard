@@ -4,12 +4,16 @@ use crate::{
     hotkeys_listener,
 };
 use parking_lot::Mutex;
-use serde::{Deserialize, Deserializer};
+use serde::{Deserialize, Deserializer, Serialize};
 use std::sync::{Arc, OnceLock};
+use crate::filesys::write_json_data;
+
+pub static DEFAULT_MAX_CLIPBOARD_ITEMS: u16 = 150;
 
 #[allow(dead_code)]
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Settings {
+    pub clipboard_max_count: u16,
     pub autorun: bool,
     pub win_key: WinKeySetting,
     pub win_key_hotkey: String,
@@ -18,7 +22,7 @@ pub struct Settings {
 
 pub static SETTINGS: OnceLock<Arc<Mutex<Settings>>> = OnceLock::new();
 
-#[derive(Debug, Copy, Clone)]
+#[derive(Debug, Copy, Clone, Serialize)]
 pub enum WinKeySetting {
     Normal = 0,
     DisableInFullscreen = 1,
@@ -52,6 +56,7 @@ pub fn get_settings_instance() -> Arc<parking_lot::Mutex<Settings>> {
     SETTINGS
         .get_or_init(|| {
             Arc::new(parking_lot::Mutex::new(Settings {
+                clipboard_max_count: DEFAULT_MAX_CLIPBOARD_ITEMS,
                 autorun: false,
                 win_key: WinKeySetting::Normal,
                 win_key_hotkey: "".to_string(),
@@ -61,12 +66,15 @@ pub fn get_settings_instance() -> Arc<parking_lot::Mutex<Settings>> {
         .clone()
 }
 
-fn set_settings(new_data: Settings) -> Settings {
+fn set_settings(new_data: Option<Settings>) -> Settings {
     let settings = get_settings_instance();
     let mut settings = settings.lock();
-    *settings = new_data.clone();
 
-    new_data
+    if let Some(data) = new_data {
+        *settings = data.clone();
+    }
+
+    settings.clone()
 }
 
 // TODO: create global event
@@ -75,7 +83,7 @@ fn set_settings(new_data: Settings) -> Settings {
 pub fn update_settings() -> Result<(), String> {
     match read_json_data::<Settings>(FILENAME_SETTINGS) {
         Ok(data) => {
-            let settings = set_settings(data);
+            let settings = set_settings(Some(data));
 
             // TODO: move out to global event listener
             autorun(settings.autorun);
@@ -84,7 +92,13 @@ pub fn update_settings() -> Result<(), String> {
             Ok(())
         }
         Err(_) => {
-            eprintln!("Failed to read JSON: {}", FILENAME_SETTINGS);
+            let default_settings = set_settings(None);
+            write_json_data(FILENAME_SETTINGS, &default_settings);
+
+            // TODO: move out to global event listener
+            autorun(default_settings.autorun);
+            hotkeys_listener::run();
+
             Ok(())
         }
     }

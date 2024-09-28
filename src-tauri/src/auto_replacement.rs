@@ -1,11 +1,12 @@
 use crate::common::KeyValue;
-use crate::filesys::FILENAME_AUTO_REPLACEMENT;
+use crate::filesys::{read_json_data, write_json_data, FILENAME_AUTO_REPLACEMENT};
 use crate::helpers::get_tauri_handle;
 use crate::keyboard_layouts::get_current_keyboard_layout;
 use crate::processes::app_active_state;
 use parking_lot::Mutex;
 use rdev::{listen, Event, EventType, Key as inKey};
 use std::collections::HashMap;
+use std::error::Error;
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::{Arc, OnceLock};
@@ -70,7 +71,7 @@ pub static USER_MAP: OnceLock<Arc<Mutex<UserAutoReplMap>>> = OnceLock::new();
 
 fn initialize_auto_repl_map() {
     let mut map: UserAutoReplMap = HashMap::new();
-    map.insert("rrr".to_string(), "replacement for rrr ❤️ ыы!".to_string());
+    map.insert("<3".to_string(), "❤️".to_string());
 
     USER_MAP.set(Arc::new(Mutex::new(map))).unwrap();
 }
@@ -113,21 +114,15 @@ fn set_is_sending(value: bool) {
 #[allow(dead_code)]
 #[tauri::command]
 pub fn update_auto_replace_data() -> Result<(), String> {
-    let app = get_tauri_handle().clone();
-    let from = app
-        .path_resolver()
-        .app_local_data_dir()
-        .expect("Failed to resolve app local dir")
-        .as_path()
-        .join("data")
-        .join(FILENAME_AUTO_REPLACEMENT);
-
-    let file = File::open(from).unwrap();
-    let reader = BufReader::new(file);
-
-    let data: Vec<KeyValue> =
-        serde_json::from_reader(reader).expect("Failed to parse auto replacement JSON");
-    set_auto_replacement_data(data);
+    match read_json_data::<Vec<KeyValue>>(FILENAME_AUTO_REPLACEMENT) {
+        Ok(data) => {
+            set_auto_replacement_data(data);
+        }
+        Err(_) => {
+            let default_settings = USER_MAP.get().unwrap().lock().clone();
+            write_json_data(FILENAME_AUTO_REPLACEMENT, &default_settings);
+        }
+    }
 
     Ok(())
 }

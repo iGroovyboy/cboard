@@ -3,6 +3,7 @@ use crate::helpers::get_tauri_handle;
 use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::fs::File;
+use std::io::Write;
 use std::io::{BufReader, Read};
 use std::path::PathBuf;
 use std::{
@@ -321,10 +322,41 @@ pub fn read_json_data<T: DeserializeOwned>(
         .join("data")
         .join(filename);
 
-    let file = File::open(from).unwrap();
+    let file = File::open(from)?;
     let reader = BufReader::new(file);
 
     let data: T = serde_json::from_reader(reader)?;
 
     Ok(data)
+}
+
+pub fn write_json_data<T: Serialize>(filename: &str, data: &T) {
+    let app = get_tauri_handle().clone();
+    let file = app
+        .path_resolver()
+        .app_local_data_dir()
+        .expect("Failed to resolve app local dir")
+        .as_path()
+        .join("data")
+        .join(filename);
+
+    let json_data = match serde_json::to_string_pretty(data) {
+        Ok(data) => data,
+        Err(e) => {
+            eprintln!("Failed to serialize data for {}: {}", filename, e);
+            return;
+        }
+    };
+
+    let mut file = match File::create(file) {
+        Ok(file) => file,
+        Err(e) => {
+            eprintln!("Failed to create JSON file {}: {}", filename, e);
+            return;
+        }
+    };
+
+    if let Err(e) = file.write_all(json_data.as_bytes()) {
+        eprintln!("Failed to write to JSON file: {}", e);
+    }
 }

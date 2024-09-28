@@ -1,4 +1,4 @@
-use crate::filesys::{read_json_data, FILENAME_APPS_BLACKLIST};
+use crate::filesys::{read_json_data, write_json_data, FILENAME_APPS_BLACKLIST};
 use core::time;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
@@ -49,7 +49,7 @@ pub struct MyProcess {
 }
 
 #[allow(dead_code)]
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BlacklistItem {
     filepath: String,
     enabled: bool,
@@ -159,10 +159,15 @@ fn get_blacklist_instance() -> Arc<parking_lot::Mutex<Vec<BlacklistItem>>> {
         .clone()
 }
 
-fn set_blacklist_data(new_data: Vec<BlacklistItem>) {
+fn set_blacklist_data(new_data: Option<Vec<BlacklistItem>>) -> Vec<BlacklistItem> {
     let blacklist = get_blacklist_instance();
     let mut blacklist = blacklist.lock();
-    *blacklist = new_data;
+
+    if let Some(data) = new_data {
+        *blacklist = data.clone();
+    }
+
+    blacklist.clone()
 }
 
 #[allow(dead_code)]
@@ -170,11 +175,14 @@ fn set_blacklist_data(new_data: Vec<BlacklistItem>) {
 pub fn update_blacklist_data() -> Result<(), String> {
     match read_json_data::<Vec<BlacklistItem>>(FILENAME_APPS_BLACKLIST) {
         Ok(data) => {
-            set_blacklist_data(data);
+            set_blacklist_data(Some(data));
+
             Ok(())
         }
         Err(_) => {
-            eprintln!("Failed to read JSON: {}", FILENAME_APPS_BLACKLIST);
+            let default_settings = set_blacklist_data(None);
+            write_json_data(FILENAME_APPS_BLACKLIST, &default_settings);
+
             Ok(())
         }
     }

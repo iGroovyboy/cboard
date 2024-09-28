@@ -13,7 +13,7 @@ pub fn send_string(string: &str) -> Result<(), String> {
 fn send(event_type: &EventType) {
     match rdev::simulate(event_type) {
         Ok(()) => (),
-        Err(SimulateError) => {
+        Err(_) => {
             println!("Couldn't send {:?}", event_type);
         }
     }
