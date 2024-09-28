@@ -22,7 +22,7 @@ pub struct Settings {
 
 pub static SETTINGS: OnceLock<Arc<Mutex<Settings>>> = OnceLock::new();
 
-#[derive(Debug, Copy, Clone, Serialize)]
+#[derive(Debug, Copy, Clone)]
 pub enum WinKeySetting {
     Normal = 0,
     DisableInFullscreen = 1,
@@ -39,6 +39,16 @@ impl TryFrom<i8> for WinKeySetting {
             2 => Ok(WinKeySetting::Hotkey),
             _ => Err("Invalid value for WinKeySetting"),
         }
+    }
+}
+
+// Serialize the WinKeySetting enum as its integer value
+impl Serialize for WinKeySetting {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_u8(*self as u8)
     }
 }
 
@@ -92,6 +102,7 @@ pub fn update_settings() -> Result<(), String> {
             Ok(())
         }
         Err(_) => {
+            println!("error {}", FILENAME_SETTINGS);
             let default_settings = set_settings(None);
             write_json_data(FILENAME_SETTINGS, &default_settings);
 

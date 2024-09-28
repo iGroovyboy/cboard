@@ -10,9 +10,6 @@ use std::{fs, thread};
 use tauri::AppHandle;
 use tokio::task;
 
-// TODO: read from user settings
-pub static MAX_CLIPBOARD_ITEMS: i32 = 150;
-
 pub enum ClipboardContent<'a> {
     Text(String),
     Image(ImageData<'a>),
@@ -47,10 +44,11 @@ pub mod my_clipboard {
     use arboard::Clipboard;
     use tauri::Manager;
 
-    use crate::clipboard::{ClipboardContent, CLIPBOARD, MAX_CLIPBOARD_ITEMS};
+    use crate::clipboard::{ClipboardContent, CLIPBOARD};
     use crate::filesys;
     use crate::helpers;
     use crate::helpers::get_tauri_handle;
+    use crate::settings::{get_settings_instance, DEFAULT_MAX_CLIPBOARD_ITEMS};
 
     pub fn get_instance() -> Arc<parking_lot::Mutex<Clipboard>> {
         CLIPBOARD
@@ -106,7 +104,14 @@ pub mod my_clipboard {
             }
         }
 
-        filesys::remove_extra_files(default_folder, MAX_CLIPBOARD_ITEMS, &app);
+        let settings = get_settings_instance();
+        let settings = settings.lock();
+
+        if let max_items = settings.clipboard_max_count {
+            filesys::remove_extra_files(default_folder, max_items, &app);
+        } else {
+            filesys::remove_extra_files(default_folder, DEFAULT_MAX_CLIPBOARD_ITEMS, &app);
+        }
 
         app.emit_all(
             "clipboard",

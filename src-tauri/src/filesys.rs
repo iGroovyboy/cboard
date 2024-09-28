@@ -32,7 +32,7 @@ pub struct Payload {
 }
 
 #[allow(dead_code)]
-pub fn remove_extra_files(folder: String, max_files_count: i32, app: &tauri::AppHandle) {
+pub fn remove_extra_files(folder: String, max_files_count: u16, app: &tauri::AppHandle) {
     let path = app
         .path_resolver()
         .app_local_data_dir()
@@ -41,7 +41,7 @@ pub fn remove_extra_files(folder: String, max_files_count: i32, app: &tauri::App
         .join(FOLDER_DATA)
         .join(folder);
 
-    let files_count = fs::read_dir(&path).unwrap().count() as i32;
+    let files_count = fs::read_dir(&path).unwrap().count() as u16;
     let files = fs::read_dir(&path).unwrap();
     if files_count > max_files_count {
         let mut left_to_remove = files_count - max_files_count;
@@ -325,7 +325,11 @@ pub fn read_json_data<T: DeserializeOwned>(
     let file = File::open(from)?;
     let reader = BufReader::new(file);
 
+    println!("try {}", filename);
+
     let data: T = serde_json::from_reader(reader)?;
+
+    println!("done {}", filename);
 
     Ok(data)
 }
