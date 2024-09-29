@@ -10,11 +10,10 @@ use std::thread;
 use sysinfo::{Pid, RefreshKind, System};
 use winapi::shared::minwindef::{BOOL, LPARAM};
 use winapi::shared::windef::{HWND, RECT};
-use winapi::um::winuser::{
-    EnumWindows, GetDesktopWindow, GetForegroundWindow, GetShellWindow, GetSystemMetrics,
-    GetWindowRect, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible,
-    SM_CXSCREEN, SM_CYSCREEN,
-};
+use winapi::um::winuser::{EnumWindows, GetAncestor, GetDesktopWindow, GetForegroundWindow,
+GetShellWindow, GetSystemMetrics, GetWindowRect, GetWindowTextLengthW, GetWindowTextW,
+GetWindowThreadProcessId, IsWindowVisible, SM_CXSCREEN, SM_CYSCREEN, GA_ROOTOWNER};
+use crate::keyboard_layouts::change_keyboard_layout;
 
 // TODO: refactor to use interface-like implementation to have same pub funcs for other os
 
@@ -99,33 +98,66 @@ pub unsafe fn watch_active_window() {
 
     loop {
         thread::sleep(time::Duration::from_millis(500));
-        if is_blacklist_empty() {
+
+        let hwnd: HWND = GetForegroundWindow();
+        if hwnd.is_null() {
             continue;
         }
 
-        let hwnd = GetForegroundWindow();
+        let hwnd = GetAncestor(hwnd, GA_ROOTOWNER);
+        if hwnd.is_null() {
+            continue;
+        }
+
         if let Some(current_process) = active_window(&mut system_processes, Some(hwnd)) {
-            let blacklist = get_blacklist_instance(); // 2µs
-            let blacklist = blacklist.lock();
+            // println!("------ {:#?}", current_process);
 
-            if let Some(blacklisted) = blacklist
-                .iter()
-                .find(|bl| bl.filepath == current_process.filepath)
-            {
-                if blacklisted.enabled {
-                    println!("Blacklisted app: {:?}", blacklisted.filepath);
-                    set_app_active_state(false);
-                }
-            } else {
-                set_app_active_state(true);
-            }
+            handle_blacklist_window(&current_process);
 
-            handle_full_screen_app(hwnd, current_process);
+            handle_full_screen_app(hwnd, &current_process);
+
+            handle_keyboard_layout(hwnd, &current_process);
         }
     }
 }
 
-unsafe fn handle_full_screen_app(hwnd: HWND, process: MyProcess) {
+unsafe fn handle_keyboard_layout(hwnd: HWND, process: &MyProcess) {
+    // if is_blacklist_empty() {
+    //     return;
+    // }
+
+    let mut lang_code: u16;
+    if process.filename == "msedgewebview2.exe" {
+        lang_code = 1049;
+    } else {
+        lang_code = 1033;
+    }
+
+    change_keyboard_layout(hwnd, lang_code);
+}
+
+unsafe fn handle_blacklist_window(current_process: &MyProcess) {
+    if is_blacklist_empty() {
+        return;
+    }
+
+    let blacklist = get_blacklist_instance(); // 2µs
+    let blacklist = blacklist.lock();
+
+    if let Some(blacklisted) = blacklist
+        .iter()
+        .find(|bl| bl.filepath == current_process.filepath)
+    {
+        if blacklisted.enabled {
+            println!("Blacklisted app: {:?}", blacklisted.filepath);
+            set_app_active_state(false);
+        }
+    } else {
+        set_app_active_state(true);
+    }
+}
+
+unsafe fn handle_full_screen_app(hwnd: HWND, process: &MyProcess) {
     if !cfg!(target_os = "windows") {
         return;
     }

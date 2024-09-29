@@ -206,7 +206,7 @@ fn save_auto_replacement_log(key: &inKey, event: Event) {
         .lock()
         .keys
         .push(KeyEvent {
-            locale: get_current_keyboard_layout().unwrap_or_else(|| String::from("")),
+            locale: get_current_keyboard_layout(),
             event,
         });
 

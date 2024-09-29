@@ -1,3 +1,5 @@
+extern crate core;
+
 pub mod keys;
 pub mod auto_replacement;
 pub mod autorun;
