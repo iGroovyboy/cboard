@@ -2,6 +2,8 @@ use core::time;
 use std::ffi::OsString;
 use std::os::windows::ffi::OsStringExt;
 use std::{ptr, thread};
+use std::sync::{Arc, OnceLock};
+use parking_lot::Mutex;
 use winapi::ctypes::c_int;
 use winapi::shared::minwindef::{HKL, LOWORD};
 use winapi::um::winnls::{GetLocaleInfoW, LCIDToLocaleName};
@@ -16,13 +18,16 @@ use winapi::um::winuser::PostMessageW;
 use winapi::um::winuser::WM_INPUTLANGCHANGEREQUEST;
 use winapi::shared::minwindef::LPARAM;
 use crate::helpers;
+use serde::{Deserialize, Serialize};
+use crate::filesys::{read_json_data, write_json_data, FILENAME_KEYBOARD_LAYOUTS};
+use crate::processes::BlacklistItem;
 
 /// TODO: add linux/macos
 
 pub const LOCALE_SNATIVELANGNAME: u32 = 4;
 pub const LOCALE_SENGLANGUAGE: u32 = 4097;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub struct KeyboardLayout {
     pub lang_id: LANGID,
     pub lang_code: String,
@@ -78,39 +83,47 @@ impl KeyboardLayout {
     }
 }
 
-// -> "en-US"
-pub fn get_current_keyboard_layout() -> String {
+// -> 1033
+pub fn get_current_keyboard_lang_id() -> u16 {
     unsafe {
         let foreground_window = GetForegroundWindow();
         let thread_id = GetWindowThreadProcessId(foreground_window, ptr::null_mut());
         let layout_id = GetKeyboardLayout(thread_id);
-
-        let lang_id = LOWORD(layout_id as u32);
-
-        KeyboardLayout::langid_to_locale(lang_id)
+        LOWORD(layout_id as u32) as u16
     }
 }
 
-pub fn get_available_keyboard_layouts() -> Vec<KeyboardLayout> {
+// -> "en-US"
+pub fn get_current_keyboard_layout_locale() -> String {
+    let lang_id = unsafe { get_current_keyboard_lang_id() };
+    KeyboardLayout::langid_to_locale(lang_id)
+}
+
+#[tauri::command]
+pub fn get_available_keyboard_layouts() -> Result<Vec<KeyboardLayout>, String> {
     let count = unsafe { GetKeyboardLayoutList(0, ptr::null_mut()) };
     if count == 0 {
-        return vec![];
+        return Ok(vec![]);
     }
 
     let mut layouts: Vec<HKL> = vec![ptr::null_mut(); count as usize];
     let ret = unsafe { GetKeyboardLayoutList(count, layouts.as_mut_ptr()) };
     if ret == 0 {
         eprintln!("Failed to get keyboard layouts");
-        return vec![];
+        return Ok(vec![]);
     }
 
-    layouts
+    Ok(layouts
         .into_iter()
         .map(|handle| KeyboardLayout::from_handle(handle as u16))
-        .collect()
+        .collect())
 }
 
 pub fn change_keyboard_layout(window_handle: HWND, lang_code: u16) {
+    if lang_code == get_current_keyboard_lang_id() {
+        return;
+    }
+
     let hex = format!("{:08X}", lang_code);
     let layout: Vec<_> = helpers::to_wide_string(hex.as_str());
 
@@ -122,4 +135,56 @@ pub fn change_keyboard_layout(window_handle: HWND, lang_code: u16) {
     }
 
     unsafe { PostMessageW(window_handle, WM_INPUTLANGCHANGEREQUEST, 0, hkl as LPARAM); }
+}
+
+#[derive(Debug, Serialize, Deserialize, Clone)]
+pub struct AppItem {
+    pub enabled: bool,
+    pub filename: Option<String>,
+    pub filepath: String,
+    pub lang_id: u16,
+    pub title: Option<String>,
+}
+
+// TODO: same as processes.rs::BLACKILST, refactor
+pub static KEY_APPS_LIST: OnceLock<Arc<Mutex<Vec<AppItem>>>> = OnceLock::new();
+
+pub fn get_key_apps_instance() -> Arc<parking_lot::Mutex<Vec<AppItem>>> {
+    KEY_APPS_LIST
+        .get_or_init(|| Arc::new(parking_lot::Mutex::new(vec![])))
+        .clone()
+}
+
+pub fn is_key_apps_empty() -> bool {
+    let key_apps = get_key_apps_instance();
+    let key_apps = key_apps.lock();
+    key_apps.is_empty()
+}
+
+fn set_key_apps_data(new_data: Option<Vec<AppItem>>) -> Vec<AppItem> {
+    let key_apps = get_key_apps_instance();
+    let mut key_apps = key_apps.lock();
+
+    if let Some(data) = new_data {
+        *key_apps = data.clone();
+    }
+
+    key_apps.clone()
+}
+
+#[tauri::command]
+pub fn update_keyboard_layouts_data() -> Result<(), String> {
+    match read_json_data::<Vec<AppItem>>(FILENAME_KEYBOARD_LAYOUTS) {
+        Ok(data) => {
+            set_key_apps_data(Some(data));
+
+            Ok(())
+        }
+        Err(_) => {
+            let default_settings = set_key_apps_data(None);
+            write_json_data(FILENAME_KEYBOARD_LAYOUTS, &default_settings);
+
+            Ok(())
+        }
+    }
 }

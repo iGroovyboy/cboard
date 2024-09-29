@@ -7,6 +7,7 @@ export const FILE_NAME = {
   Autoreplace: "autoreplace.json",
   Blacklist: "blacklist.json",
   Settings: "settings.json",
+  KeyboardLayouts: "keyboard_layouts.json",
 };
 
 export const FOLDER_NAME = {

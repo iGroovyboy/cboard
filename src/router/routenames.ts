@@ -3,4 +3,5 @@ export enum ROUTE {
   Autoreplace = "autoreplace",
   Settings = "settings",
   Blacklist = "blacklist",
+  KeyboardLayouts = "keyboard_layouts",
 }

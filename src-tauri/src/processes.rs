@@ -13,7 +13,7 @@ use winapi::shared::windef::{HWND, RECT};
 use winapi::um::winuser::{EnumWindows, GetAncestor, GetDesktopWindow, GetForegroundWindow,
 GetShellWindow, GetSystemMetrics, GetWindowRect, GetWindowTextLengthW, GetWindowTextW,
 GetWindowThreadProcessId, IsWindowVisible, SM_CXSCREEN, SM_CYSCREEN, GA_ROOTOWNER};
-use crate::keyboard_layouts::change_keyboard_layout;
+use crate::keyboard_layouts::{change_keyboard_layout, get_key_apps_instance, is_key_apps_empty, update_keyboard_layouts_data};
 
 // TODO: refactor to use interface-like implementation to have same pub funcs for other os
 
@@ -50,10 +50,10 @@ pub struct MyProcess {
 #[allow(dead_code)]
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct BlacklistItem {
-    filepath: String,
-    enabled: bool,
-    filename: Option<String>,
-    title: Option<String>,
+    pub filepath: String,
+    pub enabled: bool,
+    pub filename: Option<String>,
+    pub title: Option<String>,
 }
 
 pub struct SystemProcesses {
@@ -94,6 +94,7 @@ impl SystemProcesses {
 
 pub unsafe fn watch_active_window() {
     let _ = update_blacklist_data();
+    let _ = update_keyboard_layouts_data();
     let mut system_processes = SystemProcesses::new();
 
     loop {
@@ -121,19 +122,24 @@ pub unsafe fn watch_active_window() {
     }
 }
 
-unsafe fn handle_keyboard_layout(hwnd: HWND, process: &MyProcess) {
-    // if is_blacklist_empty() {
-    //     return;
-    // }
-
-    let mut lang_code: u16;
-    if process.filename == "msedgewebview2.exe" {
-        lang_code = 1049;
-    } else {
-        lang_code = 1033;
+unsafe fn handle_keyboard_layout(hwnd: HWND, current_process: &MyProcess) {
+    if is_key_apps_empty() {
+        return;
     }
 
-    change_keyboard_layout(hwnd, lang_code);
+    let key_apps = get_key_apps_instance();
+    let key_apps = key_apps.lock();
+
+    if let Some(app) = key_apps
+        .iter()
+        .find(|a| a.filepath == current_process.filepath)
+    {
+        if app.enabled {
+            change_keyboard_layout(hwnd, app.lang_id);
+        } else {
+            // TODO: change to previously used lang?
+        }
+    }
 }
 
 unsafe fn handle_blacklist_window(current_process: &MyProcess) {

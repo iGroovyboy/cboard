@@ -3,6 +3,7 @@ import Clipboard from "../components/AppClipboard.vue";
 import Autoreplacement from "../components/AppAutoreplacement.vue";
 import Settings from "../components/AppSettings.vue";
 import Blacklist from "../components/AppBlacklist.vue";
+import KeyboardLayouts from "../components/AppKeyboardLayouts.vue";
 import { ROUTE } from "./routenames";
 
 const routes = [
@@ -25,6 +26,11 @@ const routes = [
     path: "/blacklist",
     name: ROUTE.Blacklist,
     component: Blacklist,
+  },
+  {
+    path: "/keyboard_layouts",
+    name: ROUTE.KeyboardLayouts,
+    component: KeyboardLayouts,
   },
 ];
 

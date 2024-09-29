@@ -4,10 +4,7 @@
 )]
 
 use app::helpers::APP_HANDLE;
-use app::{
-    auto_replacement, clipboard as my_clipboard, filesys, hotkeys_reader, processes, settings,
-    tray, win_key_hook, window,
-};
+use app::{auto_replacement, clipboard as my_clipboard, filesys, hotkeys_reader, keyboard_layouts, processes, settings, tray, win_key_hook, window};
 use std::thread;
 use tauri::Manager;
 
@@ -59,6 +56,8 @@ fn main() {
             hotkeys_reader::hotkeys_listen,
             hotkeys_reader::hotkeys_unlisten,
             settings::update_settings,
+            keyboard_layouts::get_available_keyboard_layouts,
+            keyboard_layouts::update_keyboard_layouts_data,
         ])
         .system_tray(tray::make_tray())
         .on_system_tray_event(tray::handle_tray_events)

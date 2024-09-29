@@ -1,7 +1,7 @@
 use crate::common::KeyValue;
 use crate::filesys::{read_json_data, write_json_data, FILENAME_AUTO_REPLACEMENT};
 use crate::helpers::get_tauri_handle;
-use crate::keyboard_layouts::get_current_keyboard_layout;
+use crate::keyboard_layouts::get_current_keyboard_layout_locale;
 use crate::processes::app_active_state;
 use parking_lot::Mutex;
 use rdev::{listen, Event, EventType, Key as inKey};
@@ -206,7 +206,7 @@ fn save_auto_replacement_log(key: &inKey, event: Event) {
         .lock()
         .keys
         .push(KeyEvent {
-            locale: get_current_keyboard_layout(),
+            locale: get_current_keyboard_layout_locale(),
             event,
         });
 

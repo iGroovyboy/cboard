@@ -26,8 +26,18 @@ export interface AutoReplacementItem {
 }
 
 export interface AppItem {
-  filepath: string;
   enabled: boolean;
   filename?: string;
+  filepath: string;
   title?: string;
+}
+
+export interface KeyAppItem extends AppItem {
+  lang_id?: number;
+}
+
+export interface KeyboardLayout {
+  lang_id: number;
+  lang_code: String;
+  lang_name: String;
 }

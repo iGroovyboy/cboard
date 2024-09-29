@@ -23,6 +23,7 @@ pub const FOLDER_FAVOURITES: &str = "favorites";
 pub const FILENAME_AUTO_REPLACEMENT: &str = "autoreplace.json";
 pub const FILENAME_APPS_BLACKLIST: &str = "blacklist.json";
 pub const FILENAME_SETTINGS: &str = "settings.json";
+pub const FILENAME_KEYBOARD_LAYOUTS: &str = "keyboard_layouts.json";
 
 pub const FILE_MAX_LENGTH: u8 = 255;
 

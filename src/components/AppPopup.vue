@@ -18,6 +18,13 @@
       </li>
       <li class="flex">
         <router-link
+          :to="{ name: ROUTE.KeyboardLayouts }"
+          class="text-white w-full hover:text-white cursor-default"
+          >Keyboard layouts</router-link
+        >
+      </li>
+      <li class="flex">
+        <router-link
           :to="{ name: ROUTE.Blacklist }"
           class="text-white w-full hover:text-white cursor-default"
           >Blacklist apps</router-link
