@@ -2,6 +2,8 @@ use crate::filesys::{read_json_data, write_json_data, FILENAME_APPS_BLACKLIST};
 use core::time;
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
+use winapi::um::errhandlingapi::GetLastError;
+use winapi::um::libloaderapi::GetModuleHandleW;
 use std::collections::HashSet;
 use std::path::Path;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -10,10 +12,8 @@ use std::thread;
 use sysinfo::{Pid, RefreshKind, System};
 use winapi::shared::minwindef::{BOOL, LPARAM};
 use winapi::shared::windef::{HWND, RECT};
-use winapi::um::winuser::{EnumWindows, GetAncestor, GetDesktopWindow, GetForegroundWindow,
-GetShellWindow, GetSystemMetrics, GetWindowRect, GetWindowTextLengthW, GetWindowTextW,
-GetWindowThreadProcessId, IsWindowVisible, SM_CXSCREEN, SM_CYSCREEN, GA_ROOTOWNER};
-use crate::keyboard_layouts::{change_keyboard_layout, get_key_apps_instance, is_key_apps_empty, update_keyboard_layouts_data};
+use winapi::um::winuser::{DispatchMessageW, EnumWindows, GetAncestor, GetDesktopWindow, GetForegroundWindow, GetMessageW, GetShellWindow, GetSystemMetrics, GetWindowRect, GetWindowTextLengthW, GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible, GA_ROOTOWNER, HSHELL_LANGUAGE, MSG, SM_CXSCREEN, SM_CYSCREEN, WH_SHELL};
+use crate::keyboard_layouts::{change_keyboard_layout, get_current_keyboard_layout_locale, get_key_apps_instance, is_key_apps_empty, update_keyboard_layouts_data};
 
 // TODO: refactor to use interface-like implementation to have same pub funcs for other os
 

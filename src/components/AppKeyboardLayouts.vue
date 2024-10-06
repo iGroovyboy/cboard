@@ -64,11 +64,13 @@
 <script setup lang="ts">
 import AppHeaderbar from "./AppHeaderbar.vue";
 import AppBtn from "./AppBtn.vue";
+import AppProcessList from "./AppProcessList.vue";
 import { onMounted, ref } from "vue";
 import { AppItem, KeyAppItem, KeyboardLayout } from "../common/interfaces";
 import { getFile, saveTextFile } from "../services/backend";
 import { FILE_NAME } from "../common/constants";
-import AppProcessList from "./AppProcessList.vue";
+
+// TODO: move code to composable
 
 const invoke = window.__TAURI__.invoke;
 
@@ -129,11 +131,9 @@ const loadData = async () => {
   availableLayouts.value = await invoke("get_available_keyboard_layouts");
 
   const text = await getFile(FILE_NAME.KeyboardLayouts);
-
   if (text?.length) {
     try {
       apps.value = await JSON.parse(text);
-      console.log("data", apps.value);
     } catch (e) {
       console.error(e);
     }

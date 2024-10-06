@@ -25,7 +25,8 @@
         "all": true
       },
       "window": {
-        "all": true
+        "all": true,
+        "setContentProtected": true
       },
       "dialog": {
         "all": true

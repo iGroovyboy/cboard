@@ -50,6 +50,9 @@ const bootUp = async () => {
   // }
 
   await appWindow.setAlwaysOnTop(true);
+
+  // TODO: add to settings?
+  await appWindow.setContentProtected(true);
 };
 
 bootUp();
