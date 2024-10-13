@@ -91,7 +91,7 @@ jobs:
 
       - name: Update site with latest version
         run: |
-          TAG_VERSION=${{ github.ref_name }}
+          $TAG_VERSION=${{ github.ref_name }}
           sed -i 's|<span class="version">.*</span>|<span class="version">${TAG_VERSION}</span>|' site/index.html
 
       - name: Commit and push changes
