@@ -4,6 +4,7 @@
 --color-bright: rgba(255, 174, 0, 1.0);
 
 --bg-dark: rgb(36, 51, 100);
+--bg-darker: rgb(25, 33, 61);
 
 --width-main: 720px;
 }
@@ -25,6 +26,8 @@ html {
     overflow-y: scroll;
     font-family: "Raleway", sans-serif;
     font-size: 1.2em;
+    scrollbar-color: var(--color-white-50) var(--bg-darker);
+    scrollbar-width: thin;
 }
 
 body {
