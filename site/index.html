@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CBoard is a clipboard multitool for text and images management. Organize, favorite, and boost productivity with features like auto text replacement, keyboard layout switching, and more.">
+    <meta name="keywords" content="CBoard, clipboard manager, text replacement, clipboard history, keyboard layout per app, Windows, multitool">
+    <meta name="author" content="Anton Babintsev">
+    <title>CBoard - Clipboard and Text Management Multitool</title>
+
+    <link rel="stylesheet" href="public/reset.css">
+    <link rel="stylesheet" href="public/styles.css">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400..700&display=swap" rel="stylesheet">
+
+    <script defer src="public/index.js"></script>
+</head>
+<body>
+    <section id="home-screen">
+        <header>
+            <h1>CBoard</h1>
+            <p><strong>Clip. Store. Command.</strong></p>
+            <br>
+            <p>Opensource multitool for clipboard and text management.</p>
+        </header>
+        <main>
+            <img src="/public/images/screenshot1.png" alt="Starting window screenshot">
+            <p>CBoard empowers your workflow by keeping track of your copied content, whether it's text or images, with the ability to organize and favorite items you frequently use. </p>
+            <p>Simplify your productivity with a clipboard that does more.</p>
+        </main>
+        
+        <button class="go-next" onclick="scrollToNextSection(1)"><img src="/public/images/chevron-down-outline.svg" alt=""></button>
+
+        <a class="github" href="#"><img src="/public/images/logo-github.svg" width="48" height="48" alt="Github logo"></a>
+    </section>
+
+    <section id="features-screen">
+        <header>
+            <h2><strong class="text-white">CBoard</strong> | Features</h2>
+        </header>
+        <main>
+            <ul class="slider">
+                <li class="slide" id="clipboard-manager">
+                    <img src="/public/images/screenshot1.png" alt="">
+                    <h4>Clipboard Manager</h4>
+                    <p>Keep a running history of everything you copy – text, images, and more. Mark your favorite items for quick access, so you'll never lose track of important snippets.</p>
+                    <p>Customize how much clipboard history CBoard stores. Whether you want it to remember 10 items or 1000, you decide the limit, giving you full control over your clipboard and disk storage.</p>
+                </li>
+                
+                <li class="slide" id="auto-replacement">
+                    <img src="/public/images/screenshot2.png" alt="">
+                    <h4>Auto Text Replacement</h4>
+                    <p>Speed up your typing with real-time text replacement. Define custom shortcuts that CBoard will automatically replace with Unicode symbols, special characters, or frequently used text phrases.</p>
+                </li>
+
+                <li class="slide" id="keyboard-layout">
+                    <img src="/public/images/screenshot3.png" alt="">
+                    <h4>Keyboard Layout Per App</h4>
+                    <p>Tailor your keyboard layouts based on individual applications.</p>
+                </li>
+
+                <li class="slide" id="settings">
+                    <img src="/public/images/screenshot4.png" alt="">
+                    <h4>Blacklist Apps</h4>
+                    <p>Use the blacklist feature to select apps where the clipboard manager is bypassed or deactivated, ensuring no interference in specific software.</p>
+                </li>
+
+                <li class="slide" id="win-key-disable">
+                    <img src="/public/images/screenshot5.png" alt="">
+                    <h4>Settings and Win Key</h4>
+                    <p>Customize Cboard.</p>
+                    <p>Sometimes the Windows key can get in the way. With CBoard, disable the Win key in fullscreen mode, avoiding accidental interruptions during important tasks or gaming.</p>
+                </li>
+            </ul>
+
+            <div class="slider-controls"></div>
+        </main>
+    </section>
+
+    <section id="download-screen">
+        <header>
+            <h2><strong class="text-white">CBoard</strong> | Download</h2>
+        </header>
+        <main class="flex-flow">
+            <p class="text-justify">This software is provided "as is," without any warranties of any kind. By using CBoard, you acknowledge that you understand this limitation and that the developers are not liable for any issues that may arise from its use on unsupported systems.</p>
+
+            <h3>
+                Windows downloads
+            </h3>
+            <ul>
+                <li>
+                    <a href="download-link" class="button">CBoard Installer</a>
+                </li>
+                <li>
+                    <a href="donation-link" class="button">CBoard Portable</a>
+                </li>
+            </ul>
+
+            <h3>
+                Other downloads
+            </h3>
+            <p><strong>Warning:</strong> CBoard is currently only supported and developed on Windows. Other operating systems, such as macOS and Ubuntu, are not supported at this time. Use at your own risk.</p>
+            <ul>
+                <li>
+                    <a href="download-link" class="button">MacOS version</a>
+                </li>
+                <li>
+                    <a href="donation-link" class="button">Ubuntu version</a>
+                </li>
+            </ul>
+
+            <h3>Donation</h3>
+            <p>If you like the software, consider supporting future development.</p>
+            <a href="donation-link" class="button">Donate</a>
+        </main>
+    </section>
+
+    <!-- Schema.org Markup for SEO -->
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "SoftwareApplication",
+            "name": "CBoard",
+            "operatingSystem": "Windows",
+            "applicationCategory": "Utility",
+            "description": "CBoard is a clipboard multitool for text and images management. Organize, favorite, and boost productivity with features like auto text replacement, keyboard layout switching, and more.",
+            "offers": {
+                "@type": "Offer",
+                "price": "0",
+                "priceCurrency": "USD"
+            },
+            "url": "https://yourwebsite.com/download",
+            "author": {
+                "@type": "Person",
+                "name": "Anton Babintsev"
+            }
+        }
+        </script>
+</body>
+</html>
