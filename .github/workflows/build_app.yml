@@ -1,12 +1,10 @@
 name: 'publish'
 
 on:
+  workflow_dispatch:
   push:
-    branches:
-      - release
     tags:
       - "v*"
-  workflow_dispatch:
 
 env:
   APP_NAME: "CBoard"
@@ -35,12 +33,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - platform: 'macos-latest' # for Arm based macs (M1 and above).
-            args: '--target aarch64-apple-darwin'
-          - platform: 'macos-latest' # for Intel based macs.
-            args: '--target x86_64-apple-darwin'
-          - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
-            args: ''
+          # - platform: 'macos-latest' # for Arm based macs (M1 and above).
+          #   args: '--target aarch64-apple-darwin'
+          # - platform: 'macos-latest' # for Intel based macs.
+          #   args: '--target x86_64-apple-darwin'
+          # - platform: 'ubuntu-22.04' # for Tauri v1 you could replace this with ubuntu-20.04.
+          #   args: ''
           - platform: 'windows-latest'
             args: ''
 
@@ -90,3 +88,16 @@ jobs:
           releaseDraft: true
           prerelease: false
           args: ${{ matrix.args }}
+
+      - name: Update site with latest version
+        run: |
+          TAG_VERSION=${{ github.ref_name }}
+          sed -i 's|<span class="version">.*</span>|<span class="version">${TAG_VERSION}</span>|' site/index.html
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add site/index.html
+          git commit -m "site: update version to ${TAG_VERSION}"
+          git push
