@@ -9,7 +9,7 @@
   },
   "package": {
     "productName": "cboard",
-    "version": "0.1.1"
+    "version": "0.1.2"
   },
   "tauri": {
     "allowlist": {
@@ -82,11 +82,13 @@
       {
         "fullscreen": false,
         "resizable": true,
-        "title": "cboard",
+        "title": "CBoard",
+        "label": "CBoard",
         "height": 600,
         "width": 400,
         "visible": false,
-        "decorations": false
+        "decorations": false,
+        "theme": "Dark"
       }
     ],
     "systemTray": {
