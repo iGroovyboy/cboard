@@ -8,8 +8,8 @@
     "withGlobalTauri": true
   },
   "package": {
-    "productName": "cboard",
-    "version": "0.1.2"
+    "productName": "CBoard",
+    "version": "0.1.3"
   },
   "tauri": {
     "allowlist": {
@@ -83,7 +83,6 @@
         "fullscreen": false,
         "resizable": true,
         "title": "CBoard",
-        "label": "CBoard",
         "height": 600,
         "width": 400,
         "visible": false,
