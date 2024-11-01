@@ -17,6 +17,7 @@ pub struct Settings {
     pub autorun: bool,
     pub win_key: WinKeySetting,
     pub win_key_hotkey: String,
+    pub win_key_text: String,
     pub show_app_hotkey: String,
 }
 
@@ -27,6 +28,7 @@ pub enum WinKeySetting {
     Normal = 0,
     DisableInFullscreen = 1,
     Hotkey = 2,
+    Text = 3,
 }
 
 impl TryFrom<i8> for WinKeySetting {
@@ -37,6 +39,7 @@ impl TryFrom<i8> for WinKeySetting {
             0 => Ok(WinKeySetting::Normal),
             1 => Ok(WinKeySetting::DisableInFullscreen),
             2 => Ok(WinKeySetting::Hotkey),
+            3 => Ok(WinKeySetting::Text),
             _ => Err("Invalid value for WinKeySetting"),
         }
     }
@@ -62,7 +65,9 @@ impl<'de> Deserialize<'de> for WinKeySetting {
     }
 }
 
-pub fn get_settings_instance() -> Arc<parking_lot::Mutex<Settings>> {
+pub type SettingsInstance = Arc<parking_lot::Mutex<Settings>>;
+
+pub fn get_settings_instance() -> SettingsInstance {
     SETTINGS
         .get_or_init(|| {
             Arc::new(parking_lot::Mutex::new(Settings {
@@ -70,6 +75,7 @@ pub fn get_settings_instance() -> Arc<parking_lot::Mutex<Settings>> {
                 autorun: false,
                 win_key: WinKeySetting::Normal,
                 win_key_hotkey: "".to_string(),
+                win_key_text: "".to_string(),
                 show_app_hotkey: "LControl,Key1".to_string(),
             }))
         })

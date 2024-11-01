@@ -6,16 +6,8 @@
       <h2>Clipboard items</h2>
       <div class="options flex flex-col gap-y-1">
         <div class="option">
-          <input
-            id="clipboard_max_count"
-            type="number"
-            v-model="settings.clipboard_max_count"
-            min="1"
-            max="U16_MAX"
-          />
-          <label for="clipboard_max_count"
-            >Max number of clipboard items to keep</label
-          >
+          <input id="clipboard_max_count" type="number" v-model="settings.clipboard_max_count" min="1" max="U16_MAX" />
+          <label for="clipboard_max_count">Max number of clipboard items to keep</label>
         </div>
       </div>
     </div>
@@ -24,11 +16,7 @@
       <h2>Autorun</h2>
       <div class="options flex flex-col gap-y-1">
         <div class="option">
-          <input
-            id="autorun_enabled"
-            type="checkbox"
-            v-model="settings.autorun"
-          />
+          <input id="autorun_enabled" type="checkbox" v-model="settings.autorun" />
           <label for="autorun_enabled">Launch when system starts</label>
         </div>
       </div>
@@ -38,44 +26,26 @@
       <h2>Windows key</h2>
       <div class="options flex flex-col gap-y-1">
         <div class="option">
-          <input
-            name="win_key"
-            id="win_key_normal"
-            type="radio"
-            :value="0"
-            v-model="settings.win_key"
-          />
+          <input name="win_key" id="win_key_normal" type="radio" :value="0" v-model="settings.win_key" />
           <label for="win_key_normal">Normal behaviour</label>
         </div>
 
         <div class="option">
-          <input
-            name="win_key"
-            id="win_key_fullscreen"
-            type="radio"
-            :value="1"
-            v-model="settings.win_key"
-          />
+          <input name="win_key" id="win_key_fullscreen" type="radio" :value="1" v-model="settings.win_key" />
           <label for="win_key_fullscreen">Disable in fullscreen mode</label>
         </div>
 
         <div class="option">
-          <input
-            name="win_key"
-            id="win_key_hotkeys"
-            type="radio"
-            :value="2"
-            v-model="settings.win_key"
-          />
+          <input name="win_key" id="win_key_hotkeys" type="radio" :value="2" v-model="settings.win_key" />
           <label for="win_key_hotkeys">Replace with hotkeys</label>
-          <input
-            class="hotkeys"
-            @click="showHotkey('win_key_hotkey')"
-            id="win_key_hotkeys_data"
-            type="text"
-            readonly
-            :value="displayHotkeys(settings.win_key_hotkey)"
-          />
+          <input class="hotkeys" @click="showHotkey('win_key_hotkey')" id="win_key_hotkeys_data" type="text" readonly
+            :value="displayHotkeys(settings.win_key_hotkey)" />
+        </div>
+
+        <div class="option">
+          <input name="win_key" id="win_key_text" type="radio" :value="3" v-model="settings.win_key" />
+          <label for="win_key_text">Replace with text</label>
+          <input class="hotkeys" id="win_key_text_data" type="text" v-model="settings.win_key_text" />
         </div>
       </div>
     </div>
@@ -85,12 +55,7 @@
       <div class="options flex flex-col gap-y-1">
         <div class="option" @click="showHotkey('show_app_hotkey')">
           <label for="h1">Show app main screen</label>
-          <input
-            class="hotkeys"
-            id="h1"
-            type="text"
-            :value="displayHotkeys(settings.show_app_hotkey)"
-          />
+          <input class="hotkeys" id="h1" type="text" :value="displayHotkeys(settings.show_app_hotkey)" />
         </div>
       </div>
     </div>
@@ -101,19 +66,11 @@
     <app-btn text="Cancel" @click="cancelSettings" />
   </div>
 
-  <div
-    v-if="isShowHotkeyReader"
-    class="hotkeys fixed w-full h-full bg-neutral-800 flex flex-col justify-center items-center"
-  >
+  <div v-if="isShowHotkeyReader"
+    class="hotkeys fixed w-full h-full bg-neutral-800 flex flex-col justify-center items-center">
     <div class="w-full p-4">
-      <input
-        class="w-full p-2 text-center text-green-500 outline-none border select-none"
-        type="text"
-        placeholder="Press hotkeys"
-        readonly
-        :value="displayHotkeys(recordedHotkeys)"
-        autocomplete="off"
-      />
+      <input class="w-full p-2 text-center text-green-500 outline-none border select-none" type="text"
+        placeholder="Press hotkeys" readonly :value="displayHotkeys(recordedHotkeys)" autocomplete="off" />
     </div>
 
     <div class="">
@@ -152,6 +109,7 @@ const settings = reactive<Record<string, unknown>>({
 
   win_key: 0,
   win_key_hotkey: "",
+  win_key_text: "",
 
   show_app_hotkey: "LControl,Key1",
 });
@@ -250,6 +208,6 @@ h2 {
 }
 
 .hotkeys {
-  @apply px-2 py-1 text-amber-500 outline-none;
+  @apply px-2 py-1 text-amber-500 outline-none flex-grow;
 }
 </style>
