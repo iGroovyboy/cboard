@@ -4,6 +4,7 @@ use crate::keyboard_layouts::get_current_keyboard_layout_locale;
 use crate::processes::app_active_state;
 use parking_lot::Mutex;
 use rdev::{listen, Event, EventType, Key as inKey};
+use serde_json::{json, Value};
 use std::collections::HashMap;
 use std::sync::{Arc, OnceLock};
 use std::thread;
@@ -116,7 +117,14 @@ pub fn update_auto_replace_data() -> Result<(), String> {
         }
         Err(_) => {
             let default_settings = USER_MAP.get().unwrap().lock().clone();
-            write_json_data(FILENAME_AUTO_REPLACEMENT, &default_settings);
+
+            // must save this as array of objects with arbitrary strings
+            let array: Vec<Value> = default_settings.into_iter()
+                .map(|(key, value)| json!({ "key": key, "value": value }))
+                .collect();
+            let array = Value::Array(array);
+
+            write_json_data(FILENAME_AUTO_REPLACEMENT, &array);
         }
     }
 
