@@ -107,8 +107,8 @@ pub mod my_clipboard {
         let settings = get_settings_instance();
         let settings = settings.lock();
 
-        if let max_items = settings.clipboard_max_count {
-            filesys::remove_extra_files(default_folder, max_items, &app);
+        if settings.clipboard_max_count > 0 {
+            filesys::remove_extra_files(default_folder, settings.clipboard_max_count, &app);
         } else {
             filesys::remove_extra_files(default_folder, DEFAULT_MAX_CLIPBOARD_ITEMS, &app);
         }

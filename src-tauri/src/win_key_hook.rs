@@ -1,11 +1,7 @@
 use crate::hotkeys_listener::parse_keycodes;
 use crate::keys::{hotkeys_list_devicequery_to_rdev, send_hotkeys, send_string};
 use crate::processes::{app_active_state, is_fg_window_fullscreen};
-use crate::settings::{get_settings_instance, update_settings, Settings, WinKeySetting};
-use enigo::Direction::{Click, Press, Release};
-use enigo::{Enigo, Key, Keyboard, Settings as enigoSettings};
-use parking_lot::lock_api::{MutexGuard};
-use parking_lot::{RawMutex};
+use crate::settings::{get_settings_instance, update_settings, WinKeySetting};
 use std::ptr;
 use winapi::shared::minwindef::{LPARAM, LRESULT, WPARAM};
 use winapi::um::libloaderapi::GetModuleHandleW;

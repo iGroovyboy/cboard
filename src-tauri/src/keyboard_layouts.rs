@@ -1,7 +1,6 @@
-use core::time;
 use std::ffi::OsString;
 use std::os::windows::ffi::OsStringExt;
-use std::{ptr, thread};
+use std::{ptr};
 use std::sync::{Arc, OnceLock};
 use parking_lot::Mutex;
 use winapi::ctypes::c_int;
@@ -20,7 +19,6 @@ use winapi::shared::minwindef::LPARAM;
 use crate::helpers;
 use serde::{Deserialize, Serialize};
 use crate::filesys::{read_json_data, write_json_data, FILENAME_KEYBOARD_LAYOUTS};
-use crate::processes::BlacklistItem;
 
 /// TODO: add linux/macos
 
@@ -55,7 +53,7 @@ impl KeyboardLayout {
             )
         };
 
-        Self::convertResultToString(&mut buffer, &result)
+        Self::convert_result_to_string(&mut buffer, &result)
     }
 
     // 1033 -> "English"
@@ -70,10 +68,10 @@ impl KeyboardLayout {
             )
         };
 
-        Self::convertResultToString(&mut buffer, &result)
+        Self::convert_result_to_string(&mut buffer, &result)
     }
 
-    fn convertResultToString(buffer: &mut [u16; LOCALE_NAME_MAX_LENGTH as usize], result: &c_int) -> String {
+    fn convert_result_to_string(buffer: &mut [u16; LOCALE_NAME_MAX_LENGTH as usize], result: &c_int) -> String {
         if *result > 0 {
             let os_string = OsString::from_wide(&buffer[..*result as usize - 1]);
             os_string.to_string_lossy().into_owned()
@@ -95,7 +93,7 @@ pub fn get_current_keyboard_lang_id() -> u16 {
 
 // -> "en-US"
 pub fn get_current_keyboard_layout_locale() -> String {
-    let lang_id = unsafe { get_current_keyboard_lang_id() };
+    let lang_id =  get_current_keyboard_lang_id();
     KeyboardLayout::langid_to_locale(lang_id)
 }
 

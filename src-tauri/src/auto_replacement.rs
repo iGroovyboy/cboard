@@ -1,14 +1,10 @@
 use crate::common::KeyValue;
 use crate::filesys::{read_json_data, write_json_data, FILENAME_AUTO_REPLACEMENT};
-use crate::helpers::get_tauri_handle;
 use crate::keyboard_layouts::get_current_keyboard_layout_locale;
 use crate::processes::app_active_state;
 use parking_lot::Mutex;
 use rdev::{listen, Event, EventType, Key as inKey};
 use std::collections::HashMap;
-use std::error::Error;
-use std::fs::File;
-use std::io::BufReader;
 use std::sync::{Arc, OnceLock};
 use std::thread;
 use crate::keys::{send_key_times, send_string};
